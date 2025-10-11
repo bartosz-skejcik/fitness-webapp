@@ -68,17 +68,17 @@ export default function DashboardPage() {
 
     if (authLoading || loading) {
         return (
-            <div className="min-h-screen flex items-center justify-center bg-gray-50">
-                <Loader2 className="w-12 h-12 animate-spin text-blue-600" />
+            <div className="min-h-screen flex items-center justify-center bg-neutral-950">
+                <Loader2 className="w-8 h-8 animate-spin text-orange-500" />
             </div>
         );
     }
 
     const workoutTypeColors = {
-        upper: "bg-blue-100 text-blue-800",
-        lower: "bg-green-100 text-green-800",
-        legs: "bg-purple-100 text-purple-800",
-        cardio: "bg-red-100 text-red-800",
+        upper: "bg-blue-500/10 text-blue-400 border border-blue-500/20",
+        lower: "bg-orange-500/10 text-orange-400 border border-orange-500/20",
+        legs: "bg-blue-500/10 text-blue-400 border border-blue-500/20",
+        cardio: "bg-orange-500/10 text-orange-400 border border-orange-500/20",
     };
 
     const workoutTypeLabels = {
@@ -89,39 +89,40 @@ export default function DashboardPage() {
     };
 
     return (
-        <div className="min-h-screen bg-gray-50">
+        <div className="min-h-screen bg-neutral-950">
             {/* Header */}
             <Header
-                icon={<Dumbbell className="w-8 h-8 text-blue-600" />}
-                title="Fitness Tracker"
+                icon={<Dumbbell className="w-5 h-5 text-orange-500" />}
+                title="FITNESS TRACKER"
                 buttons={[
                     <button
+                        key="logout"
                         onClick={signOut}
-                        className="flex items-center gap-2 text-gray-600 hover:text-gray-900 transition-colors"
+                        className="flex items-center gap-2 text-neutral-400 hover:text-neutral-100 transition-colors"
                     >
-                        <LogOut className="w-5 h-5" />
-                        <span className="hidden sm:inline">Wyloguj</span>
+                        <LogOut className="w-4 h-4" />
+                        <span className="hidden sm:inline text-xs">
+                            Wyloguj
+                        </span>
                     </button>,
                 ]}
             />
 
-            <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            <main className="max-w-7xl mx-auto px-4 py-6">
                 {/* Quick Actions */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-6">
                     <Link
                         href="/workout/new"
-                        className="bg-gradient-to-br from-blue-500 to-blue-600 text-white rounded-xl p-6 shadow-lg hover:shadow-xl transition-all hover:scale-105"
+                        className="bg-orange-500 text-white rounded-lg p-4 hover:bg-orange-600 transition-all"
                     >
-                        <div className="flex items-center gap-4">
-                            <div className="bg-white/20 p-3 rounded-lg">
-                                <Play className="w-6 h-6" />
-                            </div>
+                        <div className="flex items-center gap-3">
+                            <Play className="w-5 h-5" />
                             <div>
-                                <h3 className="font-semibold text-md">
-                                    Rozpocznij trening
+                                <h3 className="font-semibold text-sm">
+                                    Rozpocznij
                                 </h3>
-                                <p className="text-blue-100 text-sm">
-                                    Nowa sesja treningowa
+                                <p className="text-orange-100 text-xs">
+                                    Nowa sesja
                                 </p>
                             </div>
                         </div>
@@ -129,17 +130,15 @@ export default function DashboardPage() {
 
                     <Link
                         href="/templates"
-                        className="bg-gradient-to-br from-purple-500 to-purple-600 text-white rounded-xl p-6 shadow-lg hover:shadow-xl transition-all hover:scale-105"
+                        className="bg-neutral-900 border border-neutral-800 text-white rounded-lg p-4 hover:bg-neutral-800 transition-all"
                     >
-                        <div className="flex items-center gap-4">
-                            <div className="bg-white/20 p-3 rounded-lg">
-                                <Calendar className="w-6 h-6" />
-                            </div>
+                        <div className="flex items-center gap-3">
+                            <Calendar className="w-5 h-5 text-blue-400" />
                             <div>
-                                <h3 className="font-semibold text-md">
-                                    Szablony treningów
+                                <h3 className="font-semibold text-sm">
+                                    Szablony
                                 </h3>
-                                <p className="text-purple-100 text-sm">
+                                <p className="text-neutral-400 text-xs">
                                     Zarządzaj szablonami
                                 </p>
                             </div>
@@ -148,68 +147,134 @@ export default function DashboardPage() {
 
                     <Link
                         href="/progress"
-                        className="bg-gradient-to-br from-green-500 to-green-600 text-white rounded-xl p-6 shadow-lg hover:shadow-xl transition-all hover:scale-105"
+                        className="bg-neutral-900 border border-neutral-800 text-white rounded-lg p-4 hover:bg-neutral-800 transition-all"
                     >
-                        <div className="flex items-center gap-4">
-                            <div className="bg-white/20 p-3 rounded-lg">
-                                <TrendingUp className="w-6 h-6" />
-                            </div>
+                        <div className="flex items-center gap-3">
+                            <TrendingUp className="w-5 h-5 text-blue-400" />
                             <div>
-                                <h3 className="font-semibold text-md">
+                                <h3 className="font-semibold text-sm">
                                     Postępy
                                 </h3>
-                                <p className="text-green-100 text-sm">
-                                    Statystyki i wykresy
+                                <p className="text-neutral-400 text-xs">
+                                    Statystyki
                                 </p>
                             </div>
                         </div>
                     </Link>
                 </div>
 
+                {/* Recent Workouts */}
+                <div>
+                    <h2 className="text-xs font-bold text-neutral-400 uppercase tracking-wider mb-6">
+                        Ostatnie treningi
+                    </h2>
+
+                    {recentSessions.length === 0 ? (
+                        <div className="bg-neutral-900/50 rounded-lg p-6 text-center">
+                            <History className="w-8 h-8 text-neutral-600 mx-auto mb-2" />
+                            <p className="text-neutral-500 text-xs mb-3">
+                                Brak treningów
+                            </p>
+                            <Link
+                                href="/workout/new"
+                                className="inline-flex items-center gap-2 bg-orange-500 text-white px-4 py-2 rounded-lg hover:bg-orange-600 transition-colors text-xs"
+                            >
+                                <Play className="w-4 h-4" />
+                                Rozpocznij
+                            </Link>
+                        </div>
+                    ) : (
+                        <div className="space-y-2">
+                            {recentSessions.map((session) => (
+                                <Link
+                                    key={session.id}
+                                    href={`/workout/${session.id}`}
+                                    className="flex items-center justify-between p-3 bg-neutral-900/50 border border-neutral-800 rounded-lg hover:bg-neutral-900 transition-colors"
+                                >
+                                    <div>
+                                        <h3 className="font-semibold text-sm text-neutral-100">
+                                            {session.name}
+                                        </h3>
+                                        <p className="text-xs text-neutral-500">
+                                            {new Date(
+                                                session.started_at
+                                            ).toLocaleDateString("pl-PL", {
+                                                day: "numeric",
+                                                month: "long",
+                                                hour: "2-digit",
+                                                minute: "2-digit",
+                                            })}
+                                        </p>
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                        <span
+                                            className={`px-2 py-0.5 rounded text-xs ${
+                                                workoutTypeColors[
+                                                    session.workout_type
+                                                ]
+                                            }`}
+                                        >
+                                            {
+                                                workoutTypeLabels[
+                                                    session.workout_type
+                                                ]
+                                            }
+                                        </span>
+                                        {session.completed_at && (
+                                            <span className="text-orange-500 text-xs font-medium">
+                                                ✓
+                                            </span>
+                                        )}
+                                    </div>
+                                </Link>
+                            ))}
+                        </div>
+                    )}
+                </div>
+
                 {/* Workout Templates */}
-                <div className="mb-8">
-                    <div className="flex items-center justify-between mb-4">
-                        <h2 className="text-md font-bold text-gray-900 flex items-center gap-2">
-                            <Calendar className="w-6 h-6 text-gray-600" />
-                            Twoje szablony treningów
+                <div className="my-3">
+                    <div className="flex items-center justify-between mb-3">
+                        <h2 className="text-xs font-bold text-neutral-400 uppercase tracking-wider flex items-center gap-2">
+                            Szablony treningów
                         </h2>
                         <Link
                             href="/templates/new"
-                            className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+                            className="flex items-center gap-2 bg-blue-500 text-white px-3 py-1.5 rounded-lg hover:bg-blue-600 transition-colors text-xs"
                         >
-                            <Plus className="w-5 h-5" />
-                            Nowy szablon
+                            <Plus className="w-4 h-4" />
+                            Nowy
                         </Link>
                     </div>
 
                     {templates.length === 0 ? (
-                        <div className="bg-white rounded-xl p-8 text-center shadow-sm">
-                            <Calendar className="w-12 h-12 text-gray-400 mx-auto mb-3" />
-                            <p className="text-gray-600 mb-4">
-                                Nie masz jeszcze żadnych szablonów treningów
+                        <div className="bg-neutral-900/50 rounded-lg p-6 text-center">
+                            <Calendar className="w-8 h-8 text-neutral-600 mx-auto mb-2" />
+                            <p className="text-neutral-500 text-xs mb-3">
+                                Brak szablonów treningów
                             </p>
                             <Link
                                 href="/templates/new"
-                                className="inline-flex items-center gap-2 bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors"
+                                className="inline-flex items-center gap-2 bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition-colors text-xs"
                             >
-                                <Plus className="w-5 h-5" />
-                                Stwórz pierwszy szablon
+                                <Plus className="w-4 h-4" />
+                                Stwórz szablon
                             </Link>
                         </div>
                     ) : (
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
                             {templates.map((template) => (
                                 <Link
                                     key={template.id}
                                     href={`/templates/${template.id}`}
-                                    className="bg-white rounded-xl p-6 shadow-sm hover:shadow-md transition-all border border-gray-200 hover:border-blue-300"
+                                    className="bg-neutral-900/50 rounded-lg p-4 hover:bg-neutral-900 transition-all border border-neutral-800"
                                 >
-                                    <div className="flex items-start justify-between mb-3">
-                                        <h3 className="font-semibold text-md text-gray-900">
+                                    <div className="flex items-start justify-between mb-2">
+                                        <h3 className="font-semibold text-sm text-neutral-100">
                                             {template.name}
                                         </h3>
                                         <span
-                                            className={`px-3 py-1 rounded-full text-xs font-medium ${
+                                            className={`px-2 py-0.5 rounded text-xs ${
                                                 workoutTypeColors[
                                                     template.workout_type
                                                 ]
@@ -223,81 +288,10 @@ export default function DashboardPage() {
                                         </span>
                                     </div>
                                     {template.description && (
-                                        <p className="text-gray-600 text-sm">
+                                        <p className="text-neutral-500 text-xs line-clamp-2">
                                             {template.description}
                                         </p>
                                     )}
-                                </Link>
-                            ))}
-                        </div>
-                    )}
-                </div>
-
-                {/* Recent Workouts */}
-                <div>
-                    <h2 className="text-md font-bold text-gray-900 mb-4 flex items-center gap-2">
-                        <History className="w-6 h-6 text-gray-600" />
-                        Ostatnie treningi
-                    </h2>
-
-                    {recentSessions.length === 0 ? (
-                        <div className="bg-white rounded-xl p-8 text-center shadow-sm">
-                            <History className="w-12 h-12 text-gray-400 mx-auto mb-3" />
-                            <p className="text-gray-600 mb-4">
-                                Nie masz jeszcze żadnych treningów
-                            </p>
-                            <Link
-                                href="/workout/new"
-                                className="inline-flex items-center gap-2 bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors"
-                            >
-                                <Play className="w-5 h-5" />
-                                Rozpocznij pierwszy trening
-                            </Link>
-                        </div>
-                    ) : (
-                        <div className="bg-white rounded-xl shadow-sm overflow-hidden">
-                            {recentSessions.map((session) => (
-                                <Link
-                                    key={session.id}
-                                    href={`/workout/${session.id}`}
-                                    className="flex items-center justify-between p-4 border-b border-gray-100 last:border-b-0 hover:bg-gray-50 transition-colors"
-                                >
-                                    <div>
-                                        <h3 className="font-semibold text-gray-900">
-                                            {session.name}
-                                        </h3>
-                                        <p className="text-sm text-gray-500">
-                                            {new Date(
-                                                session.started_at
-                                            ).toLocaleDateString("pl-PL", {
-                                                day: "numeric",
-                                                month: "long",
-                                                year: "numeric",
-                                                hour: "2-digit",
-                                                minute: "2-digit",
-                                            })}
-                                        </p>
-                                    </div>
-                                    <div className="flex items-center gap-3">
-                                        <span
-                                            className={`px-3 py-1 rounded-full text-xs font-medium ${
-                                                workoutTypeColors[
-                                                    session.workout_type
-                                                ]
-                                            }`}
-                                        >
-                                            {
-                                                workoutTypeLabels[
-                                                    session.workout_type
-                                                ]
-                                            }
-                                        </span>
-                                        {session.completed_at && (
-                                            <span className="text-green-600 text-sm font-medium">
-                                                ✓ Ukończono
-                                            </span>
-                                        )}
-                                    </div>
                                 </Link>
                             ))}
                         </div>

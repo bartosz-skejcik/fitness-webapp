@@ -7,6 +7,7 @@ import { createClient } from "@/lib/supabase/client";
 import { WorkoutTemplate, WorkoutType, Exercise } from "@/types/database";
 import { ArrowLeft, Play, Loader2 } from "lucide-react";
 import Link from "next/link";
+import Header from "../../../../components/header";
 
 export default function NewWorkoutPage() {
     const { user } = useAuth();
@@ -173,52 +174,48 @@ export default function NewWorkoutPage() {
     };
 
     const workoutTypeColors = {
-        upper: "bg-blue-100 text-blue-800 border-blue-300",
-        lower: "bg-green-100 text-green-800 border-green-300",
+        upper: "bg-blue-100 text-blue-400 border-blue-500/30",
+        lower: "bg-orange-500/20 text-orange-400 border-green-300",
         legs: "bg-purple-100 text-purple-800 border-purple-300",
         cardio: "bg-red-100 text-red-800 border-red-300",
     };
 
     if (loading) {
         return (
-            <div className="min-h-screen flex items-center justify-center bg-gray-50">
-                <Loader2 className="w-12 h-12 animate-spin text-blue-600" />
+            <div className="min-h-screen flex items-center justify-center bg-neutral-950">
+                <Loader2 className="w-6 h-6 animate-spin text-blue-600" />
             </div>
         );
     }
 
     return (
-        <div className="min-h-screen bg-gray-50">
-            <header className="bg-white shadow-sm sticky top-0 z-10">
-                <div className="max-w-4xl mx-auto px-4 py-4">
-                    <div className="flex items-center gap-4">
-                        <Link
-                            href="/dashboard"
-                            className="text-gray-600 hover:text-gray-900"
-                        >
-                            <ArrowLeft className="w-6 h-6" />
-                        </Link>
-                        <h1 className="text-xl font-bold text-gray-900">
-                            Rozpocznij trening
-                        </h1>
-                    </div>
-                </div>
-            </header>
+        <div className="min-h-screen bg-neutral-950">
+            <Header
+                icon={
+                    <Link
+                        href="/dashboard"
+                        className="text-neutral-400 hover:text-neutral-100"
+                    >
+                        <ArrowLeft className="w-5 h-5" />
+                    </Link>
+                }
+                title="ROZPOCZNIJ"
+            />
 
-            <main className="max-w-4xl mx-auto px-4 py-8">
-                <div className="bg-white rounded-xl shadow-sm p-6 mb-6">
-                    <h2 className="text-md font-semibold text-gray-900 mb-4">
+            <main className="max-w-4xl mx-auto px-4 py-6">
+                <div className="bg-neutral-900 rounded-lg  p-4 mb-6">
+                    <h2 className="text-sm font-semibold text-neutral-100 mb-4">
                         Wybierz szablon treningu
                     </h2>
 
                     {templates.length === 0 ? (
-                        <div className="text-center py-8">
-                            <p className="text-gray-600 mb-4">
+                        <div className="text-center py-6">
+                            <p className="text-neutral-400 mb-4">
                                 Nie masz jeszcze żadnych szablonów
                             </p>
                             <Link
                                 href="/templates/new"
-                                className="inline-block bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors"
+                                className="inline-block bg-orange-500 text-white px-4 py-2 rounded-lg hover:bg-orange-600 transition-colors"
                             >
                                 Stwórz szablon
                             </Link>
@@ -231,12 +228,12 @@ export default function NewWorkoutPage() {
                                     onClick={() => selectTemplate(template.id)}
                                     className={`text-left p-4 rounded-lg border-2 transition-all ${
                                         selectedTemplate === template.id
-                                            ? "border-blue-500 bg-blue-50"
-                                            : "border-gray-200 hover:border-gray-300"
+                                            ? "border-blue-500 bg-blue-500/10"
+                                            : "border-neutral-800 hover:border-neutral-700"
                                     }`}
                                 >
                                     <div className="flex items-start justify-between mb-2">
-                                        <h3 className="font-semibold text-gray-900">
+                                        <h3 className="font-semibold text-neutral-100">
                                             {template.name}
                                         </h3>
                                         <span
@@ -254,7 +251,7 @@ export default function NewWorkoutPage() {
                                         </span>
                                     </div>
                                     {template.description && (
-                                        <p className="text-sm text-gray-600">
+                                        <p className="text-sm text-neutral-400">
                                             {template.description}
                                         </p>
                                     )}
@@ -265,8 +262,8 @@ export default function NewWorkoutPage() {
                 </div>
 
                 {selectedTemplate && (
-                    <div className="bg-white rounded-xl shadow-sm p-6 mb-6">
-                        <h2 className="text-md font-semibold text-gray-900 mb-4">
+                    <div className="bg-neutral-900 rounded-lg  p-4 mb-6">
+                        <h2 className="text-sm font-semibold text-neutral-100 mb-4">
                             Nazwa treningu (opcjonalnie)
                         </h2>
                         <input
@@ -274,7 +271,7 @@ export default function NewWorkoutPage() {
                             value={customName}
                             onChange={(e) => setCustomName(e.target.value)}
                             placeholder="np. Trening A - Poniedziałek"
-                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            className="w-full px-4 py-2 border border-neutral-700 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                         />
                     </div>
                 )}
@@ -282,14 +279,14 @@ export default function NewWorkoutPage() {
                 <div className="flex gap-4">
                     <Link
                         href="/dashboard"
-                        className="flex-1 px-6 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors text-center font-medium"
+                        className="flex-1 px-4 py-2 border border-neutral-700 text-neutral-300 rounded-lg hover:bg-neutral-950 transition-colors text-center font-medium"
                     >
                         Anuluj
                     </Link>
                     <button
                         onClick={startWorkout}
                         disabled={starting || !selectedTemplate}
-                        className="flex-1 flex items-center justify-center gap-2 bg-gradient-to-r from-green-500 to-green-600 text-white px-6 py-3 rounded-lg hover:from-green-600 hover:to-green-700 transition-all font-medium disabled:opacity-50 disabled:cursor-not-allowed shadow-lg"
+                        className="flex-1 flex items-center justify-center gap-2 bg-orange-500 text-white px-4 py-2 rounded-lg hover:bg-orange-600 transition-all font-medium disabled:opacity-50 disabled:cursor-not-allowed "
                     >
                         {starting ? (
                             <>
@@ -299,7 +296,7 @@ export default function NewWorkoutPage() {
                         ) : (
                             <>
                                 <Play className="w-5 h-5" />
-                                Rozpocznij trening
+                                Rozpocznij
                             </>
                         )}
                     </button>

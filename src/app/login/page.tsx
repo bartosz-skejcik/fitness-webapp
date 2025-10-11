@@ -7,12 +7,12 @@ export default function LoginPage() {
     const { signInWithGoogle, loading } = useAuth();
 
     return (
-        <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-500 to-purple-600 p-4">
-            <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-md w-full">
-                <div className="text-center mb-8">
-                    <div className="inline-block p-4 bg-blue-100 rounded-full mb-4">
+        <div className="min-h-screen flex items-center justify-center bg-neutral-950 p-4">
+            <div className="bg-neutral-900 border border-neutral-800 rounded-lg p-8 max-w-md w-full">
+                <div className="text-center mb-6">
+                    <div className="inline-block p-3 bg-orange-500/10 rounded-lg mb-3 border border-orange-500/20">
                         <svg
-                            className="w-12 h-12 text-blue-600"
+                            className="w-8 h-8 text-orange-500"
                             fill="none"
                             stroke="currentColor"
                             viewBox="0 0 24 24"
@@ -25,19 +25,19 @@ export default function LoginPage() {
                             />
                         </svg>
                     </div>
-                    <h1 className="text-2xl font-bold text-gray-900 mb-2">
-                        Fitness Tracker
+                    <h1 className="text-xl font-bold text-neutral-100 mb-1">
+                        FITNESS TRACKER
                     </h1>
-                    <p className="text-gray-600">
-                        Śledź swoje treningi i postępy
+                    <p className="text-neutral-500 text-sm">
+                        Śledź treningi i postępy
                     </p>
                 </div>
 
-                <div className="space-y-4">
+                <div className="space-y-3">
                     <button
                         onClick={signInWithGoogle}
                         disabled={loading}
-                        className="w-full flex items-center justify-center gap-3 bg-white border-2 border-gray-300 hover:border-gray-400 text-gray-700 font-semibold py-3 px-4 rounded-lg transition-all duration-200 hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="w-full flex items-center justify-center gap-3 bg-neutral-800 border border-neutral-700 hover:bg-neutral-700 text-neutral-100 font-semibold py-3 px-4 rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed text-sm"
                     >
                         <svg className="w-5 h-5" viewBox="0 0 24 24">
                             <path
@@ -60,9 +60,8 @@ export default function LoginPage() {
                         Zaloguj się przez Google
                     </button>
 
-                    <div className="text-center text-sm text-gray-500 mt-6">
-                        <p>Kontynuując, akceptujesz nasze</p>
-                        <p>warunki korzystania z usługi</p>
+                    <div className="text-center text-xs text-neutral-600 mt-4">
+                        <p>Kontynuując, akceptujesz warunki usługi</p>
                     </div>
                 </div>
             </div>

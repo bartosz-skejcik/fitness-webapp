@@ -14,6 +14,7 @@ import {
     Loader2,
 } from "lucide-react";
 import Link from "next/link";
+import Header from "../../../../components/header";
 
 interface ExerciseWithSets extends Exercise {
     sets_count: number;
@@ -190,28 +191,24 @@ export default function NewTemplatePage() {
     };
 
     return (
-        <div className="min-h-screen bg-gray-50">
-            <header className="bg-white shadow-sm sticky top-0 z-10">
-                <div className="max-w-4xl mx-auto px-4 py-4">
-                    <div className="flex items-center gap-4">
-                        <Link
-                            href="/dashboard"
-                            className="text-gray-600 hover:text-gray-900"
-                        >
-                            <ArrowLeft className="w-6 h-6" />
-                        </Link>
-                        <h1 className="text-xl font-bold text-gray-900">
-                            Nowy szablon treningu
-                        </h1>
-                    </div>
-                </div>
-            </header>
+        <div className="min-h-screen bg-neutral-950">
+            <Header
+                icon={
+                    <Link
+                        href="/dashboard"
+                        className="text-neutral-400 hover:text-neutral-100"
+                    >
+                        <ArrowLeft className="w-5 h-5" />
+                    </Link>
+                }
+                title="NOWY SZABLON"
+            />
 
-            <main className="max-w-4xl mx-auto px-4 py-8">
-                <div className="bg-white rounded-xl shadow-sm p-6 mb-6">
-                    <div className="space-y-4">
+            <main className="max-w-4xl mx-auto px-4 py-6">
+                <div className="bg-neutral-900/50 border border-neutral-800 rounded-lg p-4 mb-4">
+                    <div className="space-y-3">
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                            <label className="block text-xs font-medium text-neutral-400 mb-1.5">
                                 Nazwa treningu
                             </label>
                             <input
@@ -219,12 +216,12 @@ export default function NewTemplatePage() {
                                 value={name}
                                 onChange={(e) => setName(e.target.value)}
                                 placeholder="np. Trening górnej części ciała"
-                                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                className="w-full px-3 py-2 bg-neutral-900 border border-neutral-700 text-neutral-100 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm placeholder:text-neutral-600"
                             />
                         </div>
 
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                            <label className="block text-xs font-medium text-neutral-400 mb-1.5">
                                 Typ treningu
                             </label>
                             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
@@ -236,10 +233,10 @@ export default function NewTemplatePage() {
                                     <button
                                         key={type}
                                         onClick={() => setWorkoutType(type)}
-                                        className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+                                        className={`px-3 py-1.5 rounded-lg font-medium transition-colors text-xs ${
                                             workoutType === type
-                                                ? "bg-blue-600 text-white"
-                                                : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                                                ? "bg-blue-500 text-white"
+                                                : "bg-neutral-800 text-neutral-300 hover:bg-neutral-700"
                                         }`}
                                     >
                                         {workoutTypeLabels[type]}
@@ -249,7 +246,7 @@ export default function NewTemplatePage() {
                         </div>
 
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                            <label className="block text-xs font-medium text-neutral-400 mb-1.5">
                                 Opis (opcjonalnie)
                             </label>
                             <textarea
@@ -257,35 +254,35 @@ export default function NewTemplatePage() {
                                 onChange={(e) => setDescription(e.target.value)}
                                 placeholder="Dodatkowe informacje o treningu"
                                 rows={3}
-                                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                className="w-full px-3 py-2 bg-neutral-900 border border-neutral-700 text-neutral-100 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm placeholder:text-neutral-600"
                             />
                         </div>
                     </div>
                 </div>
 
-                <div className="bg-white rounded-xl shadow-sm p-6 mb-6">
-                    <div className="flex items-center justify-between mb-4">
-                        <h2 className="text-md font-semibold text-gray-900">
+                <div className="bg-neutral-900/50 border border-neutral-800 rounded-lg p-4 mb-4">
+                    <div className="flex items-center justify-between mb-3">
+                        <h2 className="text-sm font-semibold text-neutral-100">
                             Ćwiczenia
                         </h2>
                         <button
                             onClick={() =>
                                 setShowExercisePicker(!showExercisePicker)
                             }
-                            className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+                            className="flex items-center gap-2 bg-blue-500 text-white px-3 py-1.5 rounded-lg hover:bg-blue-600 transition-colors text-xs"
                         >
-                            <Plus className="w-5 h-5" />
-                            Dodaj ćwiczenie
+                            <Plus className="w-4 h-4" />
+                            Dodaj
                         </button>
                     </div>
 
                     {showExercisePicker && (
-                        <div className="mb-4 p-4 bg-gray-50 rounded-lg">
-                            <h3 className="font-medium text-gray-900 mb-3">
+                        <div className="mb-3 p-3 bg-neutral-800/50 border border-neutral-700 rounded-lg">
+                            <h3 className="font-medium text-neutral-100 text-xs mb-2">
                                 Wybierz ćwiczenie
                             </h3>
 
-                            <div className="mb-4">
+                            <div className="mb-3">
                                 <div className="flex gap-2">
                                     <input
                                         type="text"
@@ -294,7 +291,7 @@ export default function NewTemplatePage() {
                                             setNewExerciseName(e.target.value)
                                         }
                                         placeholder="Nazwa nowego ćwiczenia"
-                                        className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                        className="flex-1 px-3 py-2 bg-neutral-900 border border-neutral-700 text-neutral-100 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-xs placeholder:text-neutral-600"
                                         onKeyPress={(e) =>
                                             e.key === "Enter" &&
                                             createNewExercise()
@@ -302,20 +299,20 @@ export default function NewTemplatePage() {
                                     />
                                     <button
                                         onClick={createNewExercise}
-                                        className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors"
+                                        className="bg-orange-500 text-white px-3 py-2 rounded-lg hover:bg-orange-600 transition-colors text-xs"
                                     >
-                                        Utwórz nowe
+                                        Utwórz
                                     </button>
                                 </div>
                             </div>
 
-                            <div className="max-h-60 overflow-y-auto space-y-2">
+                            <div className="max-h-60 overflow-y-auto space-y-1.5">
                                 {loading ? (
                                     <div className="text-center py-4">
-                                        <Loader2 className="w-6 h-6 animate-spin text-blue-600 mx-auto" />
+                                        <Loader2 className="w-5 h-5 animate-spin text-orange-500 mx-auto" />
                                     </div>
                                 ) : allExercises.length === 0 ? (
-                                    <p className="text-gray-600 text-center py-4">
+                                    <p className="text-neutral-500 text-center py-4 text-xs">
                                         Brak ćwiczeń. Utwórz pierwsze ćwiczenie
                                         powyżej.
                                     </p>
@@ -326,7 +323,7 @@ export default function NewTemplatePage() {
                                             onClick={() =>
                                                 addExercise(exercise)
                                             }
-                                            className="w-full text-left px-4 py-2 bg-white border border-gray-200 rounded-lg hover:border-blue-300 hover:bg-blue-50 transition-colors"
+                                            className="w-full text-left px-3 py-2 bg-neutral-900 border border-neutral-700 rounded-lg hover:border-blue-500 hover:bg-neutral-800 transition-colors text-neutral-100 text-xs"
                                         >
                                             {exercise.name}
                                         </button>
@@ -337,7 +334,7 @@ export default function NewTemplatePage() {
                     )}
 
                     {selectedExercises.length === 0 ? (
-                        <div className="text-center py-8 text-gray-500">
+                        <div className="text-center py-8 text-neutral-500 text-xs">
                             <p>Dodaj ćwiczenia do szablonu</p>
                         </div>
                     ) : (
@@ -345,15 +342,15 @@ export default function NewTemplatePage() {
                             {selectedExercises.map((exercise, index) => (
                                 <div
                                     key={exercise.id}
-                                    className="flex items-center gap-3 p-4 bg-gray-50 rounded-lg"
+                                    className="flex items-center gap-2 p-3 bg-neutral-800/50 border border-neutral-700 rounded-lg"
                                 >
-                                    <div className="flex flex-col gap-1">
+                                    <div className="flex flex-col gap-0.5">
                                         <button
                                             onClick={() =>
                                                 moveExercise(index, "up")
                                             }
                                             disabled={index === 0}
-                                            className="text-gray-400 hover:text-gray-600 disabled:opacity-30"
+                                            className="text-neutral-500 hover:text-neutral-300 disabled:opacity-30 text-xs"
                                         >
                                             ▲
                                         </button>
@@ -365,20 +362,20 @@ export default function NewTemplatePage() {
                                                 index ===
                                                 selectedExercises.length - 1
                                             }
-                                            className="text-gray-400 hover:text-gray-600 disabled:opacity-30"
+                                            className="text-neutral-500 hover:text-neutral-300 disabled:opacity-30 text-xs"
                                         >
                                             ▼
                                         </button>
                                     </div>
 
                                     <div className="flex-1">
-                                        <p className="font-medium text-gray-900">
+                                        <p className="font-medium text-neutral-100 text-sm">
                                             {exercise.name}
                                         </p>
                                     </div>
 
                                     <div className="flex items-center gap-2">
-                                        <label className="text-sm text-gray-600">
+                                        <label className="text-xs text-neutral-400">
                                             Serie:
                                         </label>
                                         <input
@@ -392,15 +389,15 @@ export default function NewTemplatePage() {
                                                         1
                                                 )
                                             }
-                                            className="w-16 px-2 py-1 border border-gray-300 rounded text-center"
+                                            className="w-14 px-2 py-1 bg-neutral-900 border border-neutral-700 text-neutral-100 rounded text-center text-xs"
                                         />
                                     </div>
 
                                     <button
                                         onClick={() => removeExercise(index)}
-                                        className="text-red-600 hover:text-red-700"
+                                        className="text-red-400 hover:text-red-300"
                                     >
-                                        <Trash2 className="w-5 h-5" />
+                                        <Trash2 className="w-4 h-4" />
                                     </button>
                                 </div>
                             ))}
@@ -408,10 +405,10 @@ export default function NewTemplatePage() {
                     )}
                 </div>
 
-                <div className="flex gap-4">
+                <div className="flex gap-3">
                     <Link
                         href="/dashboard"
-                        className="flex-1 px-6 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors text-center font-medium"
+                        className="flex-1 px-4 py-2 border border-neutral-700 text-neutral-300 rounded-lg hover:bg-neutral-900 transition-colors text-center font-medium text-xs"
                     >
                         Anuluj
                     </Link>
@@ -422,16 +419,16 @@ export default function NewTemplatePage() {
                             !name.trim() ||
                             selectedExercises.length === 0
                         }
-                        className="flex-1 flex items-center justify-center gap-2 bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="flex-1 flex items-center justify-center gap-2 bg-orange-500 text-white px-4 py-2 rounded-lg hover:bg-orange-600 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed text-xs"
                     >
                         {saving ? (
                             <>
-                                <Loader2 className="w-5 h-5 animate-spin" />
+                                <Loader2 className="w-4 h-4 animate-spin" />
                                 Zapisywanie...
                             </>
                         ) : (
                             <>
-                                <Save className="w-5 h-5" />
+                                <Save className="w-4 h-4" />
                                 Zapisz szablon
                             </>
                         )}

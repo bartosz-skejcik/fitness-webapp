@@ -14,6 +14,7 @@ import {
     Zap,
 } from "lucide-react";
 import Link from "next/link";
+import Header from "../../../components/header";
 import {
     LineChart,
     Line,
@@ -221,34 +222,30 @@ export default function ProgressPage() {
 
     if (loading) {
         return (
-            <div className="min-h-screen flex items-center justify-center bg-gray-50">
-                <Loader2 className="w-12 h-12 animate-spin text-blue-600" />
+            <div className="min-h-screen flex items-center justify-center bg-neutral-950">
+                <Loader2 className="w-6 h-6 animate-spin text-orange-500" />
             </div>
         );
     }
 
     return (
-        <div className="min-h-screen bg-gray-50">
-            <header className="bg-white shadow-sm sticky top-0 z-10">
-                <div className="max-w-7xl mx-auto px-4 py-4">
-                    <div className="flex items-center gap-4">
+        <div className="min-h-screen bg-neutral-950">
+            <Header
+                icon={
+                    <>
                         <Link
                             href="/dashboard"
-                            className="text-gray-600 hover:text-gray-900"
+                            className="text-neutral-400 hover:text-neutral-100"
                         >
-                            <ArrowLeft className="w-6 h-6" />
+                            <ArrowLeft className="w-5 h-5" />
                         </Link>
-                        <div className="flex items-center gap-3">
-                            <TrendingUp className="w-8 h-8 text-green-600" />
-                            <h1 className="text-xl font-bold text-gray-900">
-                                Twoje postępy
-                            </h1>
-                        </div>
-                    </div>
-                </div>
-            </header>
+                        <TrendingUp className="w-5 h-5 text-orange-500" />
+                    </>
+                }
+                title="TWOJE POSTĘPY"
+            />
 
-            <main className="max-w-7xl mx-auto px-4 py-8">
+            <main className="max-w-7xl mx-auto px-4 py-6">
                 {/* Period Selector */}
                 <div className="mb-6">
                     <div className="flex gap-2 overflow-x-auto pb-2">
@@ -258,8 +255,8 @@ export default function ProgressPage() {
                                 onClick={() => setPeriod(p.value)}
                                 className={`px-4 py-2 rounded-lg font-medium whitespace-nowrap transition-colors ${
                                     period === p.value
-                                        ? "bg-blue-600 text-white"
-                                        : "bg-white text-gray-700 hover:bg-gray-50 border border-gray-300"
+                                        ? "bg-orange-500 text-white"
+                                        : "bg-neutral-900 text-neutral-300 hover:bg-neutral-950 border border-neutral-700"
                                 }`}
                             >
                                 {p.label}
@@ -269,46 +266,42 @@ export default function ProgressPage() {
                 </div>
 
                 {/* Stats Cards */}
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-                    <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl p-6 text-white shadow-lg">
-                        <div className="flex items-center gap-3 mb-2">
-                            <Calendar className="w-6 h-6 opacity-80" />
-                            <span className="text-sm opacity-80">Treningi</span>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
+                    <div className="bg-blue-500 border border-blue-400 rounded-lg p-4 text-white">
+                        <div className="flex items-center gap-2 mb-2">
+                            <Calendar className="w-4 h-4 opacity-80" />
+                            <span className="text-xs opacity-80">Treningi</span>
                         </div>
-                        <p className="text-4xl font-bold">
+                        <p className="text-xl font-bold">
                             {stats.totalWorkouts}
                         </p>
                     </div>
 
-                    <div className="bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl p-6 text-white shadow-lg">
-                        <div className="flex items-center gap-3 mb-2">
-                            <Target className="w-6 h-6 opacity-80" />
-                            <span className="text-sm opacity-80">Serie</span>
+                    <div className="bg-blue-500 border border-blue-400 rounded-lg p-4 text-white">
+                        <div className="flex items-center gap-2 mb-2">
+                            <Target className="w-4 h-4 opacity-80" />
+                            <span className="text-xs opacity-80">Serie</span>
                         </div>
-                        <p className="text-4xl font-bold">{stats.totalSets}</p>
+                        <p className="text-xl font-bold">{stats.totalSets}</p>
                     </div>
 
-                    <div className="bg-gradient-to-br from-orange-500 to-orange-600 rounded-xl p-6 text-white shadow-lg">
-                        <div className="flex items-center gap-3 mb-2">
-                            <Dumbbell className="w-6 h-6 opacity-80" />
-                            <span className="text-sm opacity-80">Objętość</span>
+                    <div className="bg-orange-500 border border-orange-400 rounded-lg p-4 text-white">
+                        <div className="flex items-center gap-2 mb-2">
+                            <Dumbbell className="w-4 h-4 opacity-80" />
+                            <span className="text-xs opacity-80">Objętość</span>
                         </div>
-                        <p className="text-2xl font-bold">
-                            {stats.totalVolume}
-                        </p>
+                        <p className="text-xl font-bold">{stats.totalVolume}</p>
                         <p className="text-xs opacity-80 mt-1">
                             kg × powtórzenia
                         </p>
                     </div>
 
-                    <div className="bg-gradient-to-br from-green-500 to-green-600 rounded-xl p-6 text-white shadow-lg">
-                        <div className="flex items-center gap-3 mb-2">
-                            <Zap className="w-6 h-6 opacity-80" />
-                            <span className="text-sm opacity-80">Śr. czas</span>
+                    <div className="bg-orange-500 border border-orange-400 rounded-lg p-4 text-white">
+                        <div className="flex items-center gap-2 mb-2">
+                            <Zap className="w-4 h-4 opacity-80" />
+                            <span className="text-xs opacity-80">Śr. czas</span>
                         </div>
-                        <p className="text-2xl font-bold">
-                            {stats.avgDuration}
-                        </p>
+                        <p className="text-xl font-bold">{stats.avgDuration}</p>
                         <p className="text-xs opacity-80 mt-1">minut</p>
                     </div>
                 </div>
@@ -316,30 +309,31 @@ export default function ProgressPage() {
                 {/* Charts */}
                 {workoutData.length > 0 ? (
                     <>
-                        <div className="bg-white rounded-xl shadow-sm p-6 mb-6">
-                            <h2 className="text-md font-bold text-gray-900 mb-6">
+                        <div className="bg-neutral-900/50 border border-neutral-800 rounded-lg p-4 mb-4">
+                            <h2 className="text-sm font-bold text-neutral-100 mb-4">
                                 Częstotliwość treningów
                             </h2>
                             <ResponsiveContainer width="100%" height={300}>
                                 <BarChart data={workoutData}>
                                     <CartesianGrid
                                         strokeDasharray="3 3"
-                                        stroke="#e5e7eb"
+                                        stroke="#404040"
                                     />
                                     <XAxis
                                         dataKey="date"
-                                        stroke="#6b7280"
+                                        stroke="#737373"
                                         style={{ fontSize: "12px" }}
                                     />
                                     <YAxis
-                                        stroke="#6b7280"
+                                        stroke="#737373"
                                         style={{ fontSize: "12px" }}
                                     />
                                     <Tooltip
                                         contentStyle={{
-                                            backgroundColor: "#fff",
-                                            border: "1px solid #e5e7eb",
+                                            backgroundColor: "#171717",
+                                            border: "1px solid #404040",
                                             borderRadius: "8px",
+                                            color: "#f5f5f5",
                                         }}
                                     />
                                     <Bar
@@ -351,38 +345,39 @@ export default function ProgressPage() {
                             </ResponsiveContainer>
                         </div>
 
-                        <div className="bg-white rounded-xl shadow-sm p-6">
-                            <h2 className="text-md font-bold text-gray-900 mb-6">
+                        <div className="bg-neutral-900/50 border border-neutral-800 rounded-lg p-4">
+                            <h2 className="text-sm font-bold text-neutral-100 mb-4">
                                 Objętość treningu (kg × powtórzenia)
                             </h2>
                             <ResponsiveContainer width="100%" height={300}>
                                 <LineChart data={volumeData}>
                                     <CartesianGrid
                                         strokeDasharray="3 3"
-                                        stroke="#e5e7eb"
+                                        stroke="#404040"
                                     />
                                     <XAxis
                                         dataKey="date"
-                                        stroke="#6b7280"
+                                        stroke="#737373"
                                         style={{ fontSize: "12px" }}
                                     />
                                     <YAxis
-                                        stroke="#6b7280"
+                                        stroke="#737373"
                                         style={{ fontSize: "12px" }}
                                     />
                                     <Tooltip
                                         contentStyle={{
-                                            backgroundColor: "#fff",
-                                            border: "1px solid #e5e7eb",
+                                            backgroundColor: "#171717",
+                                            border: "1px solid #404040",
                                             borderRadius: "8px",
+                                            color: "#f5f5f5",
                                         }}
                                     />
                                     <Line
                                         type="monotone"
                                         dataKey="objętość"
-                                        stroke="#10b981"
+                                        stroke="#f97316"
                                         strokeWidth={3}
-                                        dot={{ fill: "#10b981", r: 5 }}
+                                        dot={{ fill: "#f97316", r: 5 }}
                                         activeDot={{ r: 7 }}
                                     />
                                 </LineChart>
@@ -390,19 +385,19 @@ export default function ProgressPage() {
                         </div>
                     </>
                 ) : (
-                    <div className="bg-white rounded-xl shadow-sm p-12 text-center">
-                        <TrendingUp className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-                        <h3 className="text-md font-semibold text-gray-900 mb-2">
+                    <div className="bg-neutral-900/50 border border-neutral-800 rounded-lg p-8 text-center">
+                        <TrendingUp className="w-8 h-8 text-neutral-600 mx-auto mb-3" />
+                        <h3 className="text-sm font-semibold text-neutral-100 mb-2">
                             Brak danych
                         </h3>
-                        <p className="text-gray-600 mb-6">
+                        <p className="text-neutral-400 text-xs mb-4">
                             Nie masz jeszcze treningów w tym okresie czasu
                         </p>
                         <Link
                             href="/workout/new"
-                            className="inline-flex items-center gap-2 bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors"
+                            className="inline-flex items-center gap-2 bg-orange-500 text-white px-4 py-2 rounded-lg hover:bg-orange-600 transition-colors text-xs"
                         >
-                            Rozpocznij trening
+                            Rozpocznij
                         </Link>
                     </div>
                 )}

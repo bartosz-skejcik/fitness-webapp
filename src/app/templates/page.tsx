@@ -7,6 +7,7 @@ import { createClient } from "@/lib/supabase/client";
 import { WorkoutTemplate, WorkoutType } from "@/types/database";
 import { ArrowLeft, Plus, Calendar, Loader2, Trash2 } from "lucide-react";
 import Link from "next/link";
+import Header from "../../../components/header";
 
 export default function TemplatesPage() {
     const { user } = useAuth();
@@ -64,10 +65,10 @@ export default function TemplatesPage() {
     }
 
     const workoutTypeColors: Record<WorkoutType, string> = {
-        upper: "bg-blue-100 text-blue-800",
-        lower: "bg-green-100 text-green-800",
-        legs: "bg-purple-100 text-purple-800",
-        cardio: "bg-red-100 text-red-800",
+        upper: "bg-blue-500/10 text-blue-400 border border-blue-500/20",
+        lower: "bg-orange-500/10 text-orange-400 border border-orange-500/20",
+        legs: "bg-blue-500/10 text-blue-400 border border-blue-500/20",
+        cardio: "bg-orange-500/10 text-orange-400 border border-orange-500/20",
     };
 
     const workoutTypeLabels: Record<WorkoutType, string> = {
@@ -79,77 +80,74 @@ export default function TemplatesPage() {
 
     if (loading) {
         return (
-            <div className="min-h-screen flex items-center justify-center bg-gray-50">
-                <Loader2 className="w-12 h-12 animate-spin text-blue-600" />
+            <div className="min-h-screen flex items-center justify-center bg-neutral-950">
+                <Loader2 className="w-8 h-8 animate-spin text-orange-500" />
             </div>
         );
     }
 
     return (
-        <div className="min-h-screen bg-gray-50">
-            <header className="bg-white shadow-sm sticky top-0 z-10">
-                <div className="max-w-7xl mx-auto px-4 py-4">
+        <div className="min-h-screen bg-neutral-950">
+            <header className="bg-neutral-900 border-b border-neutral-800 sticky top-0 z-10">
+                <div className="max-w-7xl mx-auto px-4 py-3">
                     <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-4">
+                        <div className="flex items-center gap-3">
                             <Link
                                 href="/dashboard"
-                                className="text-gray-600 hover:text-gray-900"
+                                className="text-neutral-400 hover:text-neutral-100"
                             >
-                                <ArrowLeft className="w-6 h-6" />
+                                <ArrowLeft className="w-5 h-5" />
                             </Link>
-                            <div className="flex items-center gap-3">
-                                <Calendar className="w-8 h-8 text-purple-600" />
-                                <h1 className="text-xl font-bold text-gray-900">
-                                    Szablony treningów
+                            <div className="flex items-center gap-2">
+                                <Calendar className="w-5 h-5 text-orange-500" />
+                                <h1 className="text-sm font-bold text-neutral-100">
+                                    SZABLONY TRENINGÓW
                                 </h1>
                             </div>
                         </div>
                         <Link
                             href="/templates/new"
-                            className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+                            className="flex items-center gap-2 bg-blue-500 text-white px-3 py-1.5 rounded-lg hover:bg-blue-600 transition-colors text-xs"
                         >
-                            <Plus className="w-5 h-5" />
-                            <span className="hidden sm:inline">
-                                Nowy szablon
-                            </span>
+                            <Plus className="w-4 h-4" />
+                            <span className="hidden sm:inline">Nowy</span>
                         </Link>
                     </div>
                 </div>
             </header>
 
-            <main className="max-w-7xl mx-auto px-4 py-8">
+            <main className="max-w-7xl mx-auto px-4 py-6">
                 {templates.length === 0 ? (
-                    <div className="bg-white rounded-xl shadow-sm p-12 text-center">
-                        <Calendar className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-                        <h3 className="text-md font-semibold text-gray-900 mb-2">
+                    <div className="bg-neutral-900/50 rounded-lg p-12 text-center">
+                        <Calendar className="w-12 h-12 text-neutral-600 mx-auto mb-3" />
+                        <h3 className="text-sm font-semibold text-neutral-100 mb-2">
                             Brak szablonów
                         </h3>
-                        <p className="text-gray-600 mb-6">
-                            Utwórz swój pierwszy szablon treningu, aby łatwiej
-                            organizować treningi
+                        <p className="text-neutral-500 text-xs mb-4">
+                            Utwórz swój pierwszy szablon treningu
                         </p>
                         <Link
                             href="/templates/new"
-                            className="inline-flex items-center gap-2 bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors"
+                            className="inline-flex items-center gap-2 bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition-colors text-xs"
                         >
-                            <Plus className="w-5 h-5" />
+                            <Plus className="w-4 h-4" />
                             Stwórz szablon
                         </Link>
                     </div>
                 ) : (
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
                         {templates.map((template) => (
                             <div
                                 key={template.id}
-                                className="bg-white rounded-xl shadow-sm overflow-hidden border border-gray-200 hover:shadow-md transition-all"
+                                className="bg-neutral-900/50 rounded-lg border border-neutral-800 hover:bg-neutral-900 transition-all"
                             >
-                                <div className="p-6">
-                                    <div className="flex items-start justify-between mb-3">
-                                        <h3 className="font-semibold text-md text-gray-900 flex-1">
+                                <div className="p-4">
+                                    <div className="flex items-start justify-between mb-2">
+                                        <h3 className="font-semibold text-sm text-neutral-100 flex-1">
                                             {template.name}
                                         </h3>
                                         <span
-                                            className={`px-3 py-1 rounded-full text-xs font-medium whitespace-nowrap ml-2 ${
+                                            className={`px-2 py-0.5 rounded text-xs ml-2 ${
                                                 workoutTypeColors[
                                                     template.workout_type
                                                 ]
@@ -164,13 +162,12 @@ export default function TemplatesPage() {
                                     </div>
 
                                     {template.description && (
-                                        <p className="text-gray-600 text-sm mb-4">
+                                        <p className="text-neutral-500 text-xs mb-3 line-clamp-2">
                                             {template.description}
                                         </p>
                                     )}
 
-                                    <p className="text-xs text-gray-500 mb-4">
-                                        Utworzono:{" "}
+                                    <p className="text-xs text-neutral-600 mb-3">
                                         {new Date(
                                             template.created_at
                                         ).toLocaleDateString("pl-PL")}
@@ -179,7 +176,7 @@ export default function TemplatesPage() {
                                     <div className="flex gap-2">
                                         <Link
                                             href={`/templates/${template.id}`}
-                                            className="flex-1 text-center bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
+                                            className="flex-1 text-center bg-blue-500 text-white px-3 py-1.5 rounded-lg hover:bg-blue-600 transition-colors text-xs font-medium"
                                         >
                                             Szczegóły
                                         </Link>
@@ -187,7 +184,7 @@ export default function TemplatesPage() {
                                             onClick={() =>
                                                 deleteTemplate(template.id)
                                             }
-                                            className="px-4 py-2 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 transition-colors"
+                                            className="px-3 py-1.5 bg-neutral-800 text-red-400 rounded-lg hover:bg-neutral-700 transition-colors"
                                         >
                                             <Trash2 className="w-4 h-4" />
                                         </button>

@@ -21,6 +21,7 @@ import {
     X,
 } from "lucide-react";
 import Link from "next/link";
+import Header from "../../../../components/header";
 
 interface ExerciseWithDetails extends WorkoutTemplateExercise {
     exercise: Exercise;
@@ -294,30 +295,30 @@ export default function TemplateDetailPage() {
     };
 
     const workoutTypeColors: Record<WorkoutType, string> = {
-        upper: "bg-blue-100 text-blue-800",
-        lower: "bg-green-100 text-green-800",
-        legs: "bg-purple-100 text-purple-800",
-        cardio: "bg-red-100 text-red-800",
+        upper: "bg-blue-500/100/10 text-blue-400 border border-blue-500/20",
+        lower: "bg-orange-500/10 text-orange-400 border border-orange-500/20",
+        legs: "bg-blue-500/100/10 text-blue-400 border border-blue-500/20",
+        cardio: "bg-orange-500/10 text-orange-400 border border-orange-500/20",
     };
 
     if (loading) {
         return (
-            <div className="min-h-screen flex items-center justify-center bg-gray-50">
-                <Loader2 className="w-12 h-12 animate-spin text-blue-600" />
+            <div className="min-h-screen flex items-center justify-center bg-neutral-950">
+                <Loader2 className="w-6 h-6 animate-spin text-orange-500" />
             </div>
         );
     }
 
     if (!template) {
         return (
-            <div className="min-h-screen flex items-center justify-center bg-gray-50">
+            <div className="min-h-screen flex items-center justify-center bg-neutral-950">
                 <div className="text-center">
-                    <p className="text-gray-600 mb-4">
+                    <p className="text-neutral-400 mb-3 text-sm">
                         Nie znaleziono szablonu
                     </p>
                     <Link
                         href="/templates"
-                        className="text-blue-600 hover:underline"
+                        className="text-blue-400 hover:underline text-xs"
                     >
                         Powrót do szablonów
                     </Link>
@@ -327,96 +328,86 @@ export default function TemplateDetailPage() {
     }
 
     return (
-        <div className="min-h-screen bg-gray-50">
-            <header className="bg-white shadow-sm sticky top-0 z-10">
-                <div className="max-w-4xl mx-auto px-4 py-4">
-                    <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-4">
-                            <Link
-                                href="/templates"
-                                className="text-gray-600 hover:text-gray-900"
+        <div className="min-h-screen bg-neutral-950">
+            <Header
+                icon={
+                    <>
+                        <Link
+                            href="/templates"
+                            className="text-neutral-400 hover:text-neutral-100"
+                        >
+                            <ArrowLeft className="w-5 h-5" />
+                        </Link>
+                        {!editing && (
+                            <span
+                                className={`px-2 py-0.5 rounded text-xs ${
+                                    workoutTypeColors[template.workout_type]
+                                }`}
                             >
-                                <ArrowLeft className="w-6 h-6" />
-                            </Link>
-                            <div>
-                                <h1 className="text-md font-bold text-gray-900">
-                                    {editing ? "Edytuj szablon" : template.name}
-                                </h1>
-                                {!editing && (
-                                    <span
-                                        className={`inline-block px-3 py-1 rounded-full text-xs font-medium mt-1 ${
-                                            workoutTypeColors[
-                                                template.workout_type
-                                            ]
-                                        }`}
-                                    >
-                                        {
-                                            workoutTypeLabels[
-                                                template.workout_type
-                                            ]
-                                        }
-                                    </span>
-                                )}
-                            </div>
-                        </div>
-
-                        {!editing ? (
-                            <div className="flex gap-2">
-                                <button
-                                    onClick={() => setEditing(true)}
-                                    className="flex items-center gap-2 bg-gray-100 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-200 transition-colors"
-                                >
-                                    <Edit2 className="w-4 h-4" />
-                                    <span className="hidden sm:inline">
-                                        Edytuj
-                                    </span>
-                                </button>
-                                <button
-                                    onClick={startWorkout}
-                                    className="flex items-center gap-2 bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors"
-                                >
-                                    <Play className="w-4 h-4" />
-                                    <span className="hidden sm:inline">
-                                        Rozpocznij
-                                    </span>
-                                </button>
-                            </div>
-                        ) : (
-                            <div className="flex gap-2">
-                                <button
-                                    onClick={cancelEdit}
-                                    className="flex items-center gap-2 text-gray-600 hover:text-gray-900"
-                                >
-                                    <X className="w-5 h-5" />
-                                </button>
-                            </div>
+                                {workoutTypeLabels[template.workout_type]}
+                            </span>
                         )}
-                    </div>
-                </div>
-            </header>
+                    </>
+                }
+                title={editing ? "EDYTUJ SZABLON" : template.name.toUpperCase()}
+                buttons={
+                    !editing
+                        ? [
+                              <button
+                                  key="edit"
+                                  onClick={() => setEditing(true)}
+                                  className="flex items-center gap-2 bg-neutral-800 text-neutral-300 px-3 py-1.5 rounded-lg hover:bg-neutral-700 transition-colors text-xs"
+                              >
+                                  <Edit2 className="w-4 h-4" />
+                                  <span className="hidden sm:inline">
+                                      Edytuj
+                                  </span>
+                              </button>,
+                              <button
+                                  key="start"
+                                  onClick={startWorkout}
+                                  className="flex items-center gap-2 bg-orange-500 text-white px-3 py-1.5 rounded-lg hover:bg-orange-600 transition-colors text-xs"
+                              >
+                                  <Play className="w-4 h-4" />
+                                  <span className="hidden sm:inline">
+                                      Rozpocznij
+                                  </span>
+                              </button>,
+                          ]
+                        : [
+                              <button
+                                  key="cancel"
+                                  onClick={cancelEdit}
+                                  className="flex items-center gap-2 text-neutral-400 hover:text-neutral-100"
+                              >
+                                  <X className="w-5 h-5" />
+                              </button>,
+                          ]
+                }
+            />
 
-            <main className="max-w-4xl mx-auto px-4 py-8">
+            <main className="max-w-4xl mx-auto px-4 py-6">
                 {!editing ? (
                     // View Mode
                     <>
                         {template.description && (
-                            <div className="bg-white rounded-xl shadow-sm p-6 mb-6">
-                                <h2 className="text-sm font-medium text-gray-500 mb-2">
+                            <div className="bg-neutral-900 rounded-lg  p-4 mb-6">
+                                <h2 className="text-sm font-medium text-neutral-500 mb-2">
                                     Opis
                                 </h2>
-                                <p className="text-gray-900">
+                                <p className="text-neutral-100">
                                     {template.description}
                                 </p>
                             </div>
                         )}
 
-                        <div className="bg-white rounded-xl shadow-sm p-6 mb-6">
-                            <h2 className="text-md font-semibold text-gray-900 mb-4">
+                        <div className="bg-neutral-900 rounded-lg  p-4 mb-6">
+                            <h2 className="text-sm font-semibold text-neutral-100 mb-4">
                                 Ćwiczenia ({exercises.length})
                             </h2>
 
                             {exercises.length === 0 ? (
-                                <div className="text-center py-8 text-gray-500">
+                                <div className="text-center py-6 text-neutral-500">
                                     <p>Brak ćwiczeń w tym szablonie</p>
                                 </div>
                             ) : (
@@ -424,17 +415,17 @@ export default function TemplateDetailPage() {
                                     {exercises.map((ex, idx) => (
                                         <div
                                             key={ex.id}
-                                            className="flex items-center gap-4 p-4 bg-gray-50 rounded-lg"
+                                            className="flex items-center gap-4 p-4 bg-neutral-950 rounded-lg"
                                         >
-                                            <div className="w-8 h-8 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center font-bold text-sm">
+                                            <div className="w-6 h-6 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center font-bold text-sm">
                                                 {idx + 1}
                                             </div>
                                             <div className="flex-1">
-                                                <h3 className="font-medium text-gray-900">
+                                                <h3 className="font-medium text-neutral-100">
                                                     {ex.exercise.name}
                                                 </h3>
                                             </div>
-                                            <div className="text-sm text-gray-600">
+                                            <div className="text-sm text-neutral-400">
                                                 <span className="font-medium">
                                                     {ex.sets_count}
                                                 </span>{" "}
@@ -449,27 +440,27 @@ export default function TemplateDetailPage() {
                         <div className="flex gap-4">
                             <button
                                 onClick={deleteTemplate}
-                                className="flex-1 flex items-center justify-center gap-2 bg-red-50 text-red-600 px-6 py-3 rounded-lg hover:bg-red-100 transition-colors font-medium"
+                                className="flex-1 flex items-center justify-center gap-2 bg-red-50 text-red-600 px-4 py-2 rounded-lg hover:bg-red-100 transition-colors font-medium"
                             >
                                 <Trash2 className="w-5 h-5" />
                                 Usuń szablon
                             </button>
                             <button
                                 onClick={startWorkout}
-                                className="flex-1 flex items-center justify-center gap-2 bg-gradient-to-r from-green-500 to-green-600 text-white px-6 py-3 rounded-lg hover:from-green-600 hover:to-green-700 transition-all font-medium shadow-lg"
+                                className="flex-1 flex items-center justify-center gap-2 bg-orange-500 text-white px-4 py-2 rounded-lg hover:bg-orange-600 transition-all font-medium "
                             >
                                 <Play className="w-5 h-5" />
-                                Rozpocznij trening
+                                Rozpocznij
                             </button>
                         </div>
                     </>
                 ) : (
                     // Edit Mode
                     <>
-                        <div className="bg-white rounded-xl shadow-sm p-6 mb-6">
+                        <div className="bg-neutral-900 rounded-lg  p-4 mb-6">
                             <div className="space-y-4">
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                                    <label className="block text-sm font-medium text-neutral-300 mb-2">
                                         Nazwa treningu
                                     </label>
                                     <input
@@ -478,12 +469,12 @@ export default function TemplateDetailPage() {
                                         onChange={(e) =>
                                             setEditName(e.target.value)
                                         }
-                                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                        className="w-full px-4 py-2 border border-neutral-700 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                                     />
                                 </div>
 
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                                    <label className="block text-sm font-medium text-neutral-300 mb-2">
                                         Typ treningu
                                     </label>
                                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
@@ -499,8 +490,8 @@ export default function TemplateDetailPage() {
                                                 }
                                                 className={`px-4 py-2 rounded-lg font-medium transition-colors ${
                                                     editType === type
-                                                        ? "bg-blue-600 text-white"
-                                                        : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                                                        ? "bg-orange-500 text-white"
+                                                        : "bg-neutral-800 text-neutral-300 hover:bg-neutral-700"
                                                 }`}
                                             >
                                                 {workoutTypeLabels[type]}
@@ -510,7 +501,7 @@ export default function TemplateDetailPage() {
                                 </div>
 
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                                    <label className="block text-sm font-medium text-neutral-300 mb-2">
                                         Opis (opcjonalnie)
                                     </label>
                                     <textarea
@@ -519,15 +510,15 @@ export default function TemplateDetailPage() {
                                             setEditDescription(e.target.value)
                                         }
                                         rows={3}
-                                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                        className="w-full px-4 py-2 border border-neutral-700 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                                     />
                                 </div>
                             </div>
                         </div>
 
-                        <div className="bg-white rounded-xl shadow-sm p-6 mb-6">
+                        <div className="bg-neutral-900 rounded-lg  p-4 mb-6">
                             <div className="flex items-center justify-between mb-4">
-                                <h2 className="text-md font-semibold text-gray-900">
+                                <h2 className="text-sm font-semibold text-neutral-100">
                                     Ćwiczenia
                                 </h2>
                                 <button
@@ -536,7 +527,7 @@ export default function TemplateDetailPage() {
                                             !showExercisePicker
                                         )
                                     }
-                                    className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+                                    className="flex items-center gap-2 bg-orange-500 text-white px-4 py-2 rounded-lg hover:bg-orange-600 transition-colors"
                                 >
                                     <Plus className="w-5 h-5" />
                                     Dodaj ćwiczenie
@@ -544,8 +535,8 @@ export default function TemplateDetailPage() {
                             </div>
 
                             {showExercisePicker && (
-                                <div className="mb-4 p-4 bg-gray-50 rounded-lg">
-                                    <h3 className="font-medium text-gray-900 mb-3">
+                                <div className="mb-4 p-4 bg-neutral-950 rounded-lg">
+                                    <h3 className="font-medium text-neutral-100 mb-3">
                                         Wybierz ćwiczenie
                                     </h3>
 
@@ -560,7 +551,7 @@ export default function TemplateDetailPage() {
                                                     )
                                                 }
                                                 placeholder="Nazwa nowego ćwiczenia"
-                                                className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                                className="flex-1 px-4 py-2 border border-neutral-700 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                                                 onKeyPress={(e) =>
                                                     e.key === "Enter" &&
                                                     createNewExercise()
@@ -568,7 +559,7 @@ export default function TemplateDetailPage() {
                                             />
                                             <button
                                                 onClick={createNewExercise}
-                                                className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors"
+                                                className="bg-orange-500 text-white px-4 py-2 rounded-lg hover:bg-orange-600 transition-colors"
                                             >
                                                 Utwórz nowe
                                             </button>
@@ -577,7 +568,7 @@ export default function TemplateDetailPage() {
 
                                     <div className="max-h-60 overflow-y-auto space-y-2">
                                         {allExercises.length === 0 ? (
-                                            <p className="text-gray-600 text-center py-4">
+                                            <p className="text-neutral-400 text-center py-4">
                                                 Brak ćwiczeń. Utwórz pierwsze
                                                 ćwiczenie powyżej.
                                             </p>
@@ -590,7 +581,7 @@ export default function TemplateDetailPage() {
                                                             exercise
                                                         )
                                                     }
-                                                    className="w-full text-left px-4 py-2 bg-white border border-gray-200 rounded-lg hover:border-blue-300 hover:bg-blue-50 transition-colors"
+                                                    className="w-full text-left px-4 py-2 bg-neutral-900 border border-neutral-800 rounded-lg hover:border-blue-500/30 hover:bg-blue-500/100/10 transition-colors"
                                                 >
                                                     {exercise.name}
                                                 </button>
@@ -601,7 +592,7 @@ export default function TemplateDetailPage() {
                             )}
 
                             {editExercises.length === 0 ? (
-                                <div className="text-center py-8 text-gray-500">
+                                <div className="text-center py-6 text-neutral-500">
                                     <p>Dodaj ćwiczenia do szablonu</p>
                                 </div>
                             ) : (
@@ -609,7 +600,7 @@ export default function TemplateDetailPage() {
                                     {editExercises.map((exercise, index) => (
                                         <div
                                             key={exercise.id}
-                                            className="flex items-center gap-3 p-4 bg-gray-50 rounded-lg"
+                                            className="flex items-center gap-3 p-4 bg-neutral-950 rounded-lg"
                                         >
                                             <div className="flex flex-col gap-1">
                                                 <button
@@ -620,7 +611,7 @@ export default function TemplateDetailPage() {
                                                         )
                                                     }
                                                     disabled={index === 0}
-                                                    className="text-gray-400 hover:text-gray-600 disabled:opacity-30"
+                                                    className="text-neutral-600 hover:text-neutral-400 disabled:opacity-30"
                                                 >
                                                     ▲
                                                 </button>
@@ -635,20 +626,20 @@ export default function TemplateDetailPage() {
                                                         index ===
                                                         editExercises.length - 1
                                                     }
-                                                    className="text-gray-400 hover:text-gray-600 disabled:opacity-30"
+                                                    className="text-neutral-600 hover:text-neutral-400 disabled:opacity-30"
                                                 >
                                                     ▼
                                                 </button>
                                             </div>
 
                                             <div className="flex-1">
-                                                <p className="font-medium text-gray-900">
+                                                <p className="font-medium text-neutral-100">
                                                     {exercise.exercise.name}
                                                 </p>
                                             </div>
 
                                             <div className="flex items-center gap-2">
-                                                <label className="text-sm text-gray-600">
+                                                <label className="text-sm text-neutral-400">
                                                     Serie:
                                                 </label>
                                                 <input
@@ -663,7 +654,7 @@ export default function TemplateDetailPage() {
                                                             ) || 1
                                                         )
                                                     }
-                                                    className="w-16 px-2 py-1 border border-gray-300 rounded text-center"
+                                                    className="w-16 px-2 py-1 border border-neutral-700 rounded text-center"
                                                 />
                                             </div>
 
@@ -684,14 +675,14 @@ export default function TemplateDetailPage() {
                         <div className="flex gap-4">
                             <button
                                 onClick={cancelEdit}
-                                className="flex-1 px-6 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors text-center font-medium"
+                                className="flex-1 px-4 py-2 border border-neutral-700 text-neutral-300 rounded-lg hover:bg-neutral-950 transition-colors text-center font-medium"
                             >
                                 Anuluj
                             </button>
                             <button
                                 onClick={saveChanges}
                                 disabled={saving || !editName.trim()}
-                                className="flex-1 flex items-center justify-center gap-2 bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                                className="flex-1 flex items-center justify-center gap-2 bg-orange-500 text-white px-4 py-2 rounded-lg hover:bg-orange-600 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
                             >
                                 {saving ? (
                                     <>
