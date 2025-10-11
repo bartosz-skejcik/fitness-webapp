@@ -212,7 +212,7 @@ export default function WorkoutSessionPage() {
                                 <ArrowLeft className="w-6 h-6" />
                             </Link>
                             <div>
-                                <h1 className="text-xl font-bold text-gray-900">
+                                <h1 className="text-md font-bold text-gray-900">
                                     {session.name}
                                 </h1>
                                 <p className="text-sm text-gray-500">
@@ -301,7 +301,7 @@ export default function WorkoutSessionPage() {
                 {selectedExercise && (
                     <div className="bg-white rounded-xl shadow-lg p-6">
                         <div className="flex items-center justify-between mb-6">
-                            <h2 className="text-2xl font-bold text-gray-900">
+                            <h2 className="text-xl font-bold text-gray-900">
                                 {selectedExercise.exercise.name}
                             </h2>
                             <button
@@ -404,7 +404,7 @@ export default function WorkoutSessionPage() {
                 {allSetsCompleted && (
                     <div className="mt-6 bg-gradient-to-r from-green-500 to-green-600 text-white rounded-xl p-6 text-center shadow-lg">
                         <Trophy className="w-12 h-12 mx-auto mb-3" />
-                        <h3 className="text-xl font-bold mb-2">
+                        <h3 className="text-md font-bold mb-2">
                             Świetna robota!
                         </h3>
                         <p className="mb-4">Ukończyłeś wszystkie serie</p>
@@ -462,19 +462,19 @@ function SetInput({ set, setNumber, onUpdate }: SetInputProps) {
                 </div>
                 <div className="grid grid-cols-3 gap-4 text-center">
                     <div>
-                        <p className="text-2xl font-bold text-green-800">
+                        <p className="text-xl font-bold text-green-800">
                             {set.reps}
                         </p>
                         <p className="text-xs text-green-600">powtórzeń</p>
                     </div>
                     <div>
-                        <p className="text-2xl font-bold text-green-800">
+                        <p className="text-xl font-bold text-green-800">
                             {set.weight} kg
                         </p>
                         <p className="text-xs text-green-600">ciężar</p>
                     </div>
                     <div>
-                        <p className="text-2xl font-bold text-green-800">
+                        <p className="text-xl font-bold text-green-800">
                             {set.rir ?? "-"}
                         </p>
                         <p className="text-xs text-green-600">RIR</p>
@@ -487,7 +487,7 @@ function SetInput({ set, setNumber, onUpdate }: SetInputProps) {
     return (
         <div className="bg-blue-50 border-2 border-blue-200 rounded-xl p-4">
             <div className="mb-4">
-                <span className="font-bold text-blue-800 text-lg">
+                <span className="font-bold text-blue-800 text-md">
                     Seria {setNumber}
                 </span>
             </div>
@@ -502,7 +502,7 @@ function SetInput({ set, setNumber, onUpdate }: SetInputProps) {
                         inputMode="numeric"
                         value={reps}
                         onChange={(e) => setReps(e.target.value)}
-                        className="w-full px-3 py-3 text-center text-xl font-bold border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        className="w-full px-3 py-3 text-center text-md font-bold border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                         placeholder="0"
                     />
                 </div>
@@ -517,7 +517,7 @@ function SetInput({ set, setNumber, onUpdate }: SetInputProps) {
                         step="0.5"
                         value={weight}
                         onChange={(e) => setWeight(e.target.value)}
-                        className="w-full px-3 py-3 text-center text-xl font-bold border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        className="w-full px-3 py-3 text-center text-md font-bold border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                         placeholder="0"
                     />
                 </div>
@@ -531,7 +531,7 @@ function SetInput({ set, setNumber, onUpdate }: SetInputProps) {
                         inputMode="numeric"
                         value={rir}
                         onChange={(e) => setRir(e.target.value)}
-                        className="w-full px-3 py-3 text-center text-xl font-bold border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        className="w-full px-3 py-3 text-center text-md font-bold border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                         placeholder="0"
                         min="0"
                         max="10"

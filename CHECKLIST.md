@@ -31,22 +31,22 @@
 
 ## Uruchomienie aplikacji
 
--   [ ] Uruchomiono `npm run dev`
--   [ ] Otwarto http://localhost:3000
--   [ ] Wyświetla się strona logowania
--   [ ] Kliknięto "Zaloguj się przez Google"
--   [ ] Logowanie przebiegło pomyślnie
--   [ ] Przekierowano do dashboardu
+-   [x] Uruchomiono `npm run dev`
+-   [x] Otwarto http://localhost:3000
+-   [x] Wyświetla się strona logowania
+-   [x] Kliknięto "Zaloguj się przez Google"
+-   [x] Logowanie przebiegło pomyślnie
+-   [x] Przekierowano do dashboardu
 
 ## Pierwsze użycie
 
--   [ ] Utworzono pierwszy szablon treningu
--   [ ] Dodano kilka ćwiczeń
--   [ ] Rozpoczęto pierwszy trening
--   [ ] Zalogowano serie (reps, weight, RIR)
--   [ ] Zakończono trening
--   [ ] Trening widoczny w historii
--   [ ] Sprawdzono statystyki w zakładce "Postępy"
+-   [x] Utworzono pierwszy szablon treningu
+-   [x] Dodano kilka ćwiczeń
+-   [x] Rozpoczęto pierwszy trening
+-   [x] Zalogowano serie (reps, weight, RIR)
+-   [x] Zakończono trening
+-   [x] Trening widoczny w historii
+-   [x] Sprawdzono statystyki w zakładce "Postępy"
 
 ## Wszystko działa! 🎉
 

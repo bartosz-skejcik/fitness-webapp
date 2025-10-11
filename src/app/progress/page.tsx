@@ -240,7 +240,7 @@ export default function ProgressPage() {
                         </Link>
                         <div className="flex items-center gap-3">
                             <TrendingUp className="w-8 h-8 text-green-600" />
-                            <h1 className="text-2xl font-bold text-gray-900">
+                            <h1 className="text-xl font-bold text-gray-900">
                                 Twoje postępy
                             </h1>
                         </div>
@@ -293,7 +293,7 @@ export default function ProgressPage() {
                             <Dumbbell className="w-6 h-6 opacity-80" />
                             <span className="text-sm opacity-80">Objętość</span>
                         </div>
-                        <p className="text-3xl font-bold">
+                        <p className="text-2xl font-bold">
                             {stats.totalVolume}
                         </p>
                         <p className="text-xs opacity-80 mt-1">
@@ -306,7 +306,7 @@ export default function ProgressPage() {
                             <Zap className="w-6 h-6 opacity-80" />
                             <span className="text-sm opacity-80">Śr. czas</span>
                         </div>
-                        <p className="text-3xl font-bold">
+                        <p className="text-2xl font-bold">
                             {stats.avgDuration}
                         </p>
                         <p className="text-xs opacity-80 mt-1">minut</p>
@@ -317,7 +317,7 @@ export default function ProgressPage() {
                 {workoutData.length > 0 ? (
                     <>
                         <div className="bg-white rounded-xl shadow-sm p-6 mb-6">
-                            <h2 className="text-xl font-bold text-gray-900 mb-6">
+                            <h2 className="text-md font-bold text-gray-900 mb-6">
                                 Częstotliwość treningów
                             </h2>
                             <ResponsiveContainer width="100%" height={300}>
@@ -352,7 +352,7 @@ export default function ProgressPage() {
                         </div>
 
                         <div className="bg-white rounded-xl shadow-sm p-6">
-                            <h2 className="text-xl font-bold text-gray-900 mb-6">
+                            <h2 className="text-md font-bold text-gray-900 mb-6">
                                 Objętość treningu (kg × powtórzenia)
                             </h2>
                             <ResponsiveContainer width="100%" height={300}>
@@ -392,7 +392,7 @@ export default function ProgressPage() {
                 ) : (
                     <div className="bg-white rounded-xl shadow-sm p-12 text-center">
                         <TrendingUp className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-                        <h3 className="text-xl font-semibold text-gray-900 mb-2">
+                        <h3 className="text-md font-semibold text-gray-900 mb-2">
                             Brak danych
                         </h3>
                         <p className="text-gray-600 mb-6">

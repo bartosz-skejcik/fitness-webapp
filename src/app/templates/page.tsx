@@ -99,7 +99,7 @@ export default function TemplatesPage() {
                             </Link>
                             <div className="flex items-center gap-3">
                                 <Calendar className="w-8 h-8 text-purple-600" />
-                                <h1 className="text-2xl font-bold text-gray-900">
+                                <h1 className="text-xl font-bold text-gray-900">
                                     Szablony treningów
                                 </h1>
                             </div>
@@ -121,7 +121,7 @@ export default function TemplatesPage() {
                 {templates.length === 0 ? (
                     <div className="bg-white rounded-xl shadow-sm p-12 text-center">
                         <Calendar className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-                        <h3 className="text-xl font-semibold text-gray-900 mb-2">
+                        <h3 className="text-md font-semibold text-gray-900 mb-2">
                             Brak szablonów
                         </h3>
                         <p className="text-gray-600 mb-6">
@@ -145,7 +145,7 @@ export default function TemplatesPage() {
                             >
                                 <div className="p-6">
                                     <div className="flex items-start justify-between mb-3">
-                                        <h3 className="font-semibold text-lg text-gray-900 flex-1">
+                                        <h3 className="font-semibold text-md text-gray-900 flex-1">
                                             {template.name}
                                         </h3>
                                         <span

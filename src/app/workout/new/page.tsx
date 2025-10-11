@@ -198,7 +198,7 @@ export default function NewWorkoutPage() {
                         >
                             <ArrowLeft className="w-6 h-6" />
                         </Link>
-                        <h1 className="text-2xl font-bold text-gray-900">
+                        <h1 className="text-xl font-bold text-gray-900">
                             Rozpocznij trening
                         </h1>
                     </div>
@@ -207,7 +207,7 @@ export default function NewWorkoutPage() {
 
             <main className="max-w-4xl mx-auto px-4 py-8">
                 <div className="bg-white rounded-xl shadow-sm p-6 mb-6">
-                    <h2 className="text-lg font-semibold text-gray-900 mb-4">
+                    <h2 className="text-md font-semibold text-gray-900 mb-4">
                         Wybierz szablon treningu
                     </h2>
 
@@ -266,7 +266,7 @@ export default function NewWorkoutPage() {
 
                 {selectedTemplate && (
                     <div className="bg-white rounded-xl shadow-sm p-6 mb-6">
-                        <h2 className="text-lg font-semibold text-gray-900 mb-4">
+                        <h2 className="text-md font-semibold text-gray-900 mb-4">
                             Nazwa treningu (opcjonalnie)
                         </h2>
                         <input

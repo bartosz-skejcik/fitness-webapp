@@ -16,6 +16,7 @@ import {
     History,
 } from "lucide-react";
 import Link from "next/link";
+import Header from "../../../components/header";
 
 export default function DashboardPage() {
     const { user, loading: authLoading, signOut } = useAuth();
@@ -90,25 +91,19 @@ export default function DashboardPage() {
     return (
         <div className="min-h-screen bg-gray-50">
             {/* Header */}
-            <header className="bg-white shadow-sm sticky top-0 z-10">
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-                    <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                            <Dumbbell className="w-8 h-8 text-blue-600" />
-                            <h1 className="text-2xl font-bold text-gray-900">
-                                Fitness Tracker
-                            </h1>
-                        </div>
-                        <button
-                            onClick={signOut}
-                            className="flex items-center gap-2 text-gray-600 hover:text-gray-900 transition-colors"
-                        >
-                            <LogOut className="w-5 h-5" />
-                            <span className="hidden sm:inline">Wyloguj</span>
-                        </button>
-                    </div>
-                </div>
-            </header>
+            <Header
+                icon={<Dumbbell className="w-8 h-8 text-blue-600" />}
+                title="Fitness Tracker"
+                buttons={[
+                    <button
+                        onClick={signOut}
+                        className="flex items-center gap-2 text-gray-600 hover:text-gray-900 transition-colors"
+                    >
+                        <LogOut className="w-5 h-5" />
+                        <span className="hidden sm:inline">Wyloguj</span>
+                    </button>,
+                ]}
+            />
 
             <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
                 {/* Quick Actions */}
@@ -122,7 +117,7 @@ export default function DashboardPage() {
                                 <Play className="w-6 h-6" />
                             </div>
                             <div>
-                                <h3 className="font-semibold text-lg">
+                                <h3 className="font-semibold text-md">
                                     Rozpocznij trening
                                 </h3>
                                 <p className="text-blue-100 text-sm">
@@ -141,7 +136,7 @@ export default function DashboardPage() {
                                 <Calendar className="w-6 h-6" />
                             </div>
                             <div>
-                                <h3 className="font-semibold text-lg">
+                                <h3 className="font-semibold text-md">
                                     Szablony treningów
                                 </h3>
                                 <p className="text-purple-100 text-sm">
@@ -160,7 +155,7 @@ export default function DashboardPage() {
                                 <TrendingUp className="w-6 h-6" />
                             </div>
                             <div>
-                                <h3 className="font-semibold text-lg">
+                                <h3 className="font-semibold text-md">
                                     Postępy
                                 </h3>
                                 <p className="text-green-100 text-sm">
@@ -174,7 +169,7 @@ export default function DashboardPage() {
                 {/* Workout Templates */}
                 <div className="mb-8">
                     <div className="flex items-center justify-between mb-4">
-                        <h2 className="text-xl font-bold text-gray-900 flex items-center gap-2">
+                        <h2 className="text-md font-bold text-gray-900 flex items-center gap-2">
                             <Calendar className="w-6 h-6 text-gray-600" />
                             Twoje szablony treningów
                         </h2>
@@ -210,7 +205,7 @@ export default function DashboardPage() {
                                     className="bg-white rounded-xl p-6 shadow-sm hover:shadow-md transition-all border border-gray-200 hover:border-blue-300"
                                 >
                                     <div className="flex items-start justify-between mb-3">
-                                        <h3 className="font-semibold text-lg text-gray-900">
+                                        <h3 className="font-semibold text-md text-gray-900">
                                             {template.name}
                                         </h3>
                                         <span
@@ -240,7 +235,7 @@ export default function DashboardPage() {
 
                 {/* Recent Workouts */}
                 <div>
-                    <h2 className="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
+                    <h2 className="text-md font-bold text-gray-900 mb-4 flex items-center gap-2">
                         <History className="w-6 h-6 text-gray-600" />
                         Ostatnie treningi
                     </h2>
