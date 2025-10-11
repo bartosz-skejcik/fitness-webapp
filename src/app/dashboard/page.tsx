@@ -9,14 +9,18 @@ import {
     Dumbbell,
     Plus,
     TrendingUp,
-    Calendar,
-    LogOut,
+    ClipboardList,
     Loader2,
     Play,
     History,
+    Calendar,
+    Target,
+    Flame,
+    Trophy,
 } from "lucide-react";
 import Link from "next/link";
 import Header from "../../../components/header";
+import UserMenu from "../../../components/user-menu";
 
 export default function DashboardPage() {
     const { user, loading: authLoading, signOut } = useAuth();
@@ -24,6 +28,12 @@ export default function DashboardPage() {
     const [templates, setTemplates] = useState<WorkoutTemplate[]>([]);
     const [recentSessions, setRecentSessions] = useState<WorkoutSession[]>([]);
     const [loading, setLoading] = useState(true);
+    const [stats, setStats] = useState({
+        totalWorkouts: 0,
+        weeklyWorkouts: 0,
+        totalVolume: 0,
+        currentStreak: 0,
+    });
     const supabase = createClient();
 
     useEffect(() => {
@@ -50,15 +60,92 @@ export default function DashboardPage() {
             if (templatesError) throw templatesError;
             setTemplates(templatesData || []);
 
-            // Fetch recent workout sessions
-            const { data: sessionsData, error: sessionsError } = await supabase
-                .from("workout_sessions")
-                .select("*")
-                .order("started_at", { ascending: false })
-                .limit(5);
+            // Fetch all workout sessions
+            const { data: allSessions, error: allSessionsError } =
+                await supabase
+                    .from("workout_sessions")
+                    .select("*")
+                    .order("started_at", { ascending: false });
 
-            if (sessionsError) throw sessionsError;
-            setRecentSessions(sessionsData || []);
+            if (allSessionsError) throw allSessionsError;
+
+            // Fetch recent workout sessions for display
+            const recentSessionsData = (allSessions || []).slice(0, 5);
+            setRecentSessions(recentSessionsData);
+
+            // Calculate stats
+            const now = new Date();
+            const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+
+            const weeklyWorkouts = (allSessions || []).filter(
+                (s) => new Date(s.started_at) >= weekAgo
+            ).length;
+
+            // Calculate current streak
+            let streak = 0;
+            const sortedSessions = (allSessions || []).sort(
+                (a, b) =>
+                    new Date(b.started_at).getTime() -
+                    new Date(a.started_at).getTime()
+            );
+
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+
+            for (let i = 0; i < sortedSessions.length; i++) {
+                const sessionDate = new Date(sortedSessions[i].started_at);
+                sessionDate.setHours(0, 0, 0, 0);
+
+                const daysDiff = Math.floor(
+                    (today.getTime() - sessionDate.getTime()) /
+                        (1000 * 60 * 60 * 24)
+                );
+
+                if (daysDiff === streak || (streak === 0 && daysDiff <= 1)) {
+                    streak++;
+                } else {
+                    break;
+                }
+            }
+
+            // Fetch exercise logs and sets for volume calculation
+            const sessionIds = (allSessions || []).map((s) => s.id);
+
+            if (sessionIds.length > 0) {
+                const { data: exerciseLogs } = await supabase
+                    .from("exercise_logs")
+                    .select("id")
+                    .in("workout_session_id", sessionIds);
+
+                const exerciseLogIds = (exerciseLogs || []).map((l) => l.id);
+
+                if (exerciseLogIds.length > 0) {
+                    const { data: sets } = await supabase
+                        .from("set_logs")
+                        .select("reps, weight")
+                        .in("exercise_log_id", exerciseLogIds)
+                        .eq("completed", true);
+
+                    const totalVolume = (sets || []).reduce(
+                        (sum, set) => sum + set.reps * (set.weight || 0),
+                        0
+                    );
+
+                    setStats({
+                        totalWorkouts: (allSessions || []).length,
+                        weeklyWorkouts,
+                        totalVolume: Math.round(totalVolume),
+                        currentStreak: streak,
+                    });
+                } else {
+                    setStats({
+                        totalWorkouts: (allSessions || []).length,
+                        weeklyWorkouts,
+                        totalVolume: 0,
+                        currentStreak: streak,
+                    });
+                }
+            }
         } catch (error) {
             console.error("Error fetching data:", error);
         } finally {
@@ -94,73 +181,73 @@ export default function DashboardPage() {
             <Header
                 icon={<Dumbbell className="w-5 h-5 text-orange-500" />}
                 title="FITNESS TRACKER"
-                buttons={[
-                    <button
-                        key="logout"
-                        onClick={signOut}
-                        className="flex items-center gap-2 text-neutral-400 hover:text-neutral-100 transition-colors"
-                    >
-                        <LogOut className="w-4 h-4" />
-                        <span className="hidden sm:inline text-xs">
-                            Wyloguj
-                        </span>
-                    </button>,
-                ]}
+                buttons={[<UserMenu key="user-menu" />]}
             />
 
-            <main className="max-w-7xl mx-auto px-4 py-6">
-                {/* Quick Actions */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-6">
-                    <Link
-                        href="/workout/new"
-                        className="bg-orange-500 text-white rounded-lg p-4 hover:bg-orange-600 transition-all"
-                    >
-                        <div className="flex items-center gap-3">
-                            <Play className="w-5 h-5" />
-                            <div>
-                                <h3 className="font-semibold text-sm">
-                                    Rozpocznij
-                                </h3>
-                                <p className="text-orange-100 text-xs">
-                                    Nowa sesja
-                                </p>
-                            </div>
+            <main className="max-w-7xl mx-auto px-4 py-6 pb-24">
+                {/* Stats Tiles */}
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
+                    <div className="bg-neutral-900 border border-neutral-800 rounded-lg p-4">
+                        <div className="flex items-center gap-2 mb-2">
+                            <Calendar className="w-4 h-4 text-blue-400" />
+                            <span className="text-xs text-neutral-400">
+                                Treningi
+                            </span>
                         </div>
-                    </Link>
+                        <p className="text-2xl font-bold text-neutral-100">
+                            {stats.totalWorkouts}
+                        </p>
+                        <p className="text-xs text-neutral-500 mt-1">
+                            wszystkie
+                        </p>
+                    </div>
 
-                    <Link
-                        href="/templates"
-                        className="bg-neutral-900 border border-neutral-800 text-white rounded-lg p-4 hover:bg-neutral-800 transition-all"
-                    >
-                        <div className="flex items-center gap-3">
-                            <Calendar className="w-5 h-5 text-blue-400" />
-                            <div>
-                                <h3 className="font-semibold text-sm">
-                                    Szablony
-                                </h3>
-                                <p className="text-neutral-400 text-xs">
-                                    Zarządzaj szablonami
-                                </p>
-                            </div>
+                    <div className="bg-neutral-900 border border-neutral-800 rounded-lg p-4">
+                        <div className="flex items-center gap-2 mb-2">
+                            <Target className="w-4 h-4 text-orange-500" />
+                            <span className="text-xs text-neutral-400">
+                                Ten tydzień
+                            </span>
                         </div>
-                    </Link>
+                        <p className="text-2xl font-bold text-neutral-100">
+                            {stats.weeklyWorkouts}
+                        </p>
+                        <p className="text-xs text-neutral-500 mt-1">
+                            treningów
+                        </p>
+                    </div>
 
-                    <Link
-                        href="/progress"
-                        className="bg-neutral-900 border border-neutral-800 text-white rounded-lg p-4 hover:bg-neutral-800 transition-all"
-                    >
-                        <div className="flex items-center gap-3">
-                            <TrendingUp className="w-5 h-5 text-blue-400" />
-                            <div>
-                                <h3 className="font-semibold text-sm">
-                                    Postępy
-                                </h3>
-                                <p className="text-neutral-400 text-xs">
-                                    Statystyki
-                                </p>
-                            </div>
+                    <div className="bg-neutral-900 border border-neutral-800 rounded-lg p-4">
+                        <div className="flex items-center gap-2 mb-2">
+                            <Dumbbell className="w-4 h-4 text-blue-400" />
+                            <span className="text-xs text-neutral-400">
+                                Objętość
+                            </span>
                         </div>
-                    </Link>
+                        <p className="text-2xl font-bold text-neutral-100">
+                            {stats.totalVolume > 1000
+                                ? `${(stats.totalVolume / 1000).toFixed(1)}k`
+                                : stats.totalVolume}
+                        </p>
+                        <p className="text-xs text-neutral-500 mt-1">
+                            kg × reps
+                        </p>
+                    </div>
+
+                    <div className="bg-neutral-900 border border-neutral-800 rounded-lg p-4">
+                        <div className="flex items-center gap-2 mb-2">
+                            <Flame className="w-4 h-4 text-orange-500" />
+                            <span className="text-xs text-neutral-400">
+                                Seria
+                            </span>
+                        </div>
+                        <p className="text-2xl font-bold text-neutral-100">
+                            {stats.currentStreak}
+                        </p>
+                        <p className="text-xs text-neutral-500 mt-1">
+                            {stats.currentStreak === 1 ? "dzień" : "dni"}
+                        </p>
+                    </div>
                 </div>
 
                 {/* Recent Workouts */}
@@ -249,7 +336,7 @@ export default function DashboardPage() {
 
                     {templates.length === 0 ? (
                         <div className="bg-neutral-900/50 rounded-lg p-6 text-center">
-                            <Calendar className="w-8 h-8 text-neutral-600 mx-auto mb-2" />
+                            <ClipboardList className="w-8 h-8 text-neutral-600 mx-auto mb-2" />
                             <p className="text-neutral-500 text-xs mb-3">
                                 Brak szablonów treningów
                             </p>
@@ -298,6 +385,32 @@ export default function DashboardPage() {
                     )}
                 </div>
             </main>
+
+            {/* Bottom Navigation */}
+            <div className="fixed bottom-0 left-0 right-0 bg-neutral-950 border-t border-neutral-800 px-4 py-3">
+                <div className="max-w-7xl mx-auto flex justify-around items-center gap-4">
+                    <Link
+                        href="/templates"
+                        className="flex flex-col items-center justify-center w-16 h-16 rounded-full bg-neutral-900 border border-neutral-800 text-blue-400 hover:bg-neutral-800 transition-colors"
+                    >
+                        <ClipboardList className="w-6 h-6" />
+                    </Link>
+
+                    <Link
+                        href="/workout/new"
+                        className="flex flex-col items-center justify-center w-16 h-16 rounded-full bg-orange-500 text-white hover:bg-orange-600 transition-colors"
+                    >
+                        <Play className="w-6 h-6" />
+                    </Link>
+
+                    <Link
+                        href="/progress"
+                        className="flex flex-col items-center justify-center w-16 h-16 rounded-full bg-neutral-900 border border-neutral-800 text-blue-400 hover:bg-neutral-800 transition-colors"
+                    >
+                        <TrendingUp className="w-6 h-6" />
+                    </Link>
+                </div>
+            </div>
         </div>
     );
 }

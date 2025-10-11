@@ -47,6 +47,12 @@ export default function ProgressPage() {
         totalVolume: 0,
         avgDuration: 0,
     });
+    const [comparisonStats, setComparisonStats] = useState({
+        workoutChange: 0,
+        volumeChange: 0,
+        setsChange: 0,
+        durationChange: 0,
+    });
 
     useEffect(() => {
         if (!user) {
@@ -65,23 +71,33 @@ export default function ProgressPage() {
         try {
             const now = new Date();
             let startDate: Date;
+            let comparisonStartDate: Date;
+            let comparisonEndDate: Date;
 
             switch (period) {
                 case "2weeks":
                     startDate = subDays(now, 14);
+                    comparisonStartDate = subDays(now, 28);
+                    comparisonEndDate = subDays(now, 14);
                     break;
                 case "1month":
                     startDate = subMonths(now, 1);
+                    comparisonStartDate = subMonths(now, 2);
+                    comparisonEndDate = subMonths(now, 1);
                     break;
                 case "3months":
                     startDate = subMonths(now, 3);
+                    comparisonStartDate = subMonths(now, 6);
+                    comparisonEndDate = subMonths(now, 3);
                     break;
                 case "1year":
                     startDate = subMonths(now, 12);
+                    comparisonStartDate = subMonths(now, 24);
+                    comparisonEndDate = subMonths(now, 12);
                     break;
             }
 
-            // Fetch workout sessions
+            // Fetch current period sessions
             const { data: sessions, error: sessionsError } = await supabase
                 .from("workout_sessions")
                 .select("*")
@@ -89,6 +105,16 @@ export default function ProgressPage() {
                 .order("started_at");
 
             if (sessionsError) throw sessionsError;
+
+            // Fetch comparison period sessions
+            const { data: comparisonSessions, error: compSessionsError } =
+                await supabase
+                    .from("workout_sessions")
+                    .select("*")
+                    .gte("started_at", comparisonStartDate.toISOString())
+                    .lt("started_at", comparisonEndDate.toISOString());
+
+            if (compSessionsError) throw compSessionsError;
 
             // Fetch all exercise logs for these sessions
             const sessionIds = (sessions || []).map((s) => s.id);
@@ -153,6 +179,97 @@ export default function ProgressPage() {
                 totalVolume: Math.round(totalVolume),
                 avgDuration: Math.round(avgDuration),
             });
+
+            // Calculate comparison period stats
+            const compSessionIds = (comparisonSessions || []).map((s) => s.id);
+
+            if (compSessionIds.length > 0) {
+                const { data: compExerciseLogs } = await supabase
+                    .from("exercise_logs")
+                    .select("*")
+                    .in("workout_session_id", compSessionIds);
+
+                const compExerciseLogIds = (compExerciseLogs || []).map(
+                    (l) => l.id
+                );
+
+                const { data: compSets } = await supabase
+                    .from("set_logs")
+                    .select("*")
+                    .in("exercise_log_id", compExerciseLogIds)
+                    .eq("completed", true);
+
+                const compTotalSets = (compSets || []).length;
+                const compTotalVolume = (compSets || []).reduce(
+                    (sum, set) => sum + set.reps * (set.weight || 0),
+                    0
+                );
+
+                const compCompletedSessions = (comparisonSessions || []).filter(
+                    (s) => s.completed_at
+                );
+                const compAvgDuration =
+                    compCompletedSessions.length > 0
+                        ? compCompletedSessions.reduce((sum, s) => {
+                              const start = new Date(s.started_at).getTime();
+                              const end = new Date(s.completed_at!).getTime();
+                              return sum + (end - start);
+                          }, 0) /
+                          compCompletedSessions.length /
+                          1000 /
+                          60
+                        : 0;
+
+                // Calculate percentage changes
+                const workoutChange =
+                    comparisonSessions.length > 0
+                        ? Math.round(
+                              ((sessions.length - comparisonSessions.length) /
+                                  comparisonSessions.length) *
+                                  100
+                          )
+                        : 0;
+
+                const volumeChange =
+                    compTotalVolume > 0
+                        ? Math.round(
+                              ((totalVolume - compTotalVolume) /
+                                  compTotalVolume) *
+                                  100
+                          )
+                        : 0;
+
+                const setsChange =
+                    compTotalSets > 0
+                        ? Math.round(
+                              ((totalSets - compTotalSets) / compTotalSets) *
+                                  100
+                          )
+                        : 0;
+
+                const durationChange =
+                    compAvgDuration > 0
+                        ? Math.round(
+                              ((avgDuration - compAvgDuration) /
+                                  compAvgDuration) *
+                                  100
+                          )
+                        : 0;
+
+                setComparisonStats({
+                    workoutChange,
+                    volumeChange,
+                    setsChange,
+                    durationChange,
+                });
+            } else {
+                setComparisonStats({
+                    workoutChange: 0,
+                    volumeChange: 0,
+                    setsChange: 0,
+                    durationChange: 0,
+                });
+            }
 
             // Prepare workout frequency data
             const workoutsByDate = (sessions || []).reduce((acc, session) => {
@@ -275,6 +392,19 @@ export default function ProgressPage() {
                         <p className="text-xl font-bold">
                             {stats.totalWorkouts}
                         </p>
+                        {comparisonStats.workoutChange !== 0 && (
+                            <p
+                                className={`text-xs mt-1 flex items-center gap-1 ${
+                                    comparisonStats.workoutChange > 0
+                                        ? "text-green-300"
+                                        : "text-red-300"
+                                }`}
+                            >
+                                {comparisonStats.workoutChange > 0 ? "↑" : "↓"}
+                                {Math.abs(comparisonStats.workoutChange)}% vs
+                                poprzedni okres
+                            </p>
+                        )}
                     </div>
 
                     <div className="bg-blue-500 border border-blue-400 rounded-lg p-4 text-white">
@@ -283,6 +413,19 @@ export default function ProgressPage() {
                             <span className="text-xs opacity-80">Serie</span>
                         </div>
                         <p className="text-xl font-bold">{stats.totalSets}</p>
+                        {comparisonStats.setsChange !== 0 && (
+                            <p
+                                className={`text-xs mt-1 flex items-center gap-1 ${
+                                    comparisonStats.setsChange > 0
+                                        ? "text-green-300"
+                                        : "text-red-300"
+                                }`}
+                            >
+                                {comparisonStats.setsChange > 0 ? "↑" : "↓"}
+                                {Math.abs(comparisonStats.setsChange)}% vs
+                                poprzedni okres
+                            </p>
+                        )}
                     </div>
 
                     <div className="bg-orange-500 border border-orange-400 rounded-lg p-4 text-white">
@@ -294,6 +437,19 @@ export default function ProgressPage() {
                         <p className="text-xs opacity-80 mt-1">
                             kg × powtórzenia
                         </p>
+                        {comparisonStats.volumeChange !== 0 && (
+                            <p
+                                className={`text-xs mt-1 flex items-center gap-1 ${
+                                    comparisonStats.volumeChange > 0
+                                        ? "text-green-300"
+                                        : "text-red-300"
+                                }`}
+                            >
+                                {comparisonStats.volumeChange > 0 ? "↑" : "↓"}
+                                {Math.abs(comparisonStats.volumeChange)}% vs
+                                poprzedni okres
+                            </p>
+                        )}
                     </div>
 
                     <div className="bg-orange-500 border border-orange-400 rounded-lg p-4 text-white">
@@ -303,6 +459,19 @@ export default function ProgressPage() {
                         </div>
                         <p className="text-xl font-bold">{stats.avgDuration}</p>
                         <p className="text-xs opacity-80 mt-1">minut</p>
+                        {comparisonStats.durationChange !== 0 && (
+                            <p
+                                className={`text-xs mt-1 flex items-center gap-1 ${
+                                    comparisonStats.durationChange > 0
+                                        ? "text-red-300"
+                                        : "text-green-300"
+                                }`}
+                            >
+                                {comparisonStats.durationChange > 0 ? "↑" : "↓"}
+                                {Math.abs(comparisonStats.durationChange)}% vs
+                                poprzedni okres
+                            </p>
+                        )}
                     </div>
                 </div>
 

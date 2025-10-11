@@ -88,33 +88,29 @@ export default function TemplatesPage() {
 
     return (
         <div className="min-h-screen bg-neutral-950">
-            <header className="bg-neutral-900 border-b border-neutral-800 sticky top-0 z-10">
-                <div className="max-w-7xl mx-auto px-4 py-3">
-                    <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                            <Link
-                                href="/dashboard"
-                                className="text-neutral-400 hover:text-neutral-100"
-                            >
-                                <ArrowLeft className="w-5 h-5" />
-                            </Link>
-                            <div className="flex items-center gap-2">
-                                <Calendar className="w-5 h-5 text-orange-500" />
-                                <h1 className="text-sm font-bold text-neutral-100">
-                                    SZABLONY TRENINGÓW
-                                </h1>
-                            </div>
-                        </div>
+            <Header
+                title="SZABLONY TRENINGÓW"
+                icon={
+                    <>
                         <Link
-                            href="/templates/new"
-                            className="flex items-center gap-2 bg-blue-500 text-white px-3 py-1.5 rounded-lg hover:bg-blue-600 transition-colors text-xs"
+                            href="/dashboard"
+                            className="text-neutral-400 hover:text-neutral-100"
                         >
-                            <Plus className="w-4 h-4" />
-                            <span className="hidden sm:inline">Nowy</span>
+                            <ArrowLeft className="w-5 h-5" />
                         </Link>
-                    </div>
-                </div>
-            </header>
+                        <Calendar className="w-5 h-5 text-orange-500" />
+                    </>
+                }
+                buttons={[
+                    <Link
+                        href="/templates/new"
+                        className="flex items-center gap-2 bg-blue-500 text-white px-3 py-1.5 rounded-lg hover:bg-blue-600 transition-colors text-xs"
+                    >
+                        <Plus className="w-4 h-4" />
+                        <span className="hidden sm:inline">Nowy</span>
+                    </Link>,
+                ]}
+            />
 
             <main className="max-w-7xl mx-auto px-4 py-6">
                 {templates.length === 0 ? (

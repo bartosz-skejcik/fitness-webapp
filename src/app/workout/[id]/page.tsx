@@ -15,8 +15,10 @@ import {
     Check,
     Loader2,
     ChevronRight,
+    ChevronLeft,
     Trophy,
     X,
+    List,
 } from "lucide-react";
 import Link from "next/link";
 import Header from "../../../../components/header";
@@ -40,6 +42,8 @@ export default function WorkoutSessionPage() {
     const [loading, setLoading] = useState(true);
     const [selectedExercise, setSelectedExercise] =
         useState<ExerciseLogWithDetails | null>(null);
+    const [currentExerciseIndex, setCurrentExerciseIndex] = useState(0);
+    const [showExerciseList, setShowExerciseList] = useState(false);
     const [completing, setCompleting] = useState(false);
 
     useEffect(() => {
@@ -100,7 +104,14 @@ export default function WorkoutSessionPage() {
                 log.sets.some((set: SetLog) => !set.completed)
             );
             if (firstIncomplete) {
+                const index = logsWithSets.findIndex(
+                    (l) => l.id === firstIncomplete.id
+                );
+                setCurrentExerciseIndex(index);
                 setSelectedExercise(firstIncomplete as ExerciseLogWithDetails);
+            } else if (logsWithSets.length > 0) {
+                setCurrentExerciseIndex(0);
+                setSelectedExercise(logsWithSets[0] as ExerciseLogWithDetails);
             }
         } catch (error) {
             console.error("Error fetching workout session:", error);
@@ -170,6 +181,28 @@ export default function WorkoutSessionPage() {
         }
     }
 
+    function goToNextExercise() {
+        if (currentExerciseIndex < exerciseLogs.length - 1) {
+            const nextIndex = currentExerciseIndex + 1;
+            setCurrentExerciseIndex(nextIndex);
+            setSelectedExercise(exerciseLogs[nextIndex]);
+        }
+    }
+
+    function goToPreviousExercise() {
+        if (currentExerciseIndex > 0) {
+            const prevIndex = currentExerciseIndex - 1;
+            setCurrentExerciseIndex(prevIndex);
+            setSelectedExercise(exerciseLogs[prevIndex]);
+        }
+    }
+
+    function selectExerciseFromList(index: number) {
+        setCurrentExerciseIndex(index);
+        setSelectedExercise(exerciseLogs[index]);
+        setShowExerciseList(false);
+    }
+
     if (loading) {
         return (
             <div className="min-h-screen flex items-center justify-center bg-neutral-950">
@@ -200,119 +233,140 @@ export default function WorkoutSessionPage() {
         log.sets.every((set) => set.completed)
     );
 
+    const completedExercises = exerciseLogs.filter((log) =>
+        log.sets.every((set) => set.completed)
+    ).length;
+    const progressPercentage =
+        exerciseLogs.length > 0
+            ? (completedExercises / exerciseLogs.length) * 100
+            : 0;
+
     return (
-        <div className="min-h-screen bg-neutral-950 pb-20">
+        <div className="min-h-screen bg-neutral-950 flex flex-col">
             <Header
                 icon={
-                    <>
-                        <Link
-                            href="/dashboard"
-                            className="text-neutral-400 hover:text-neutral-100"
-                        >
-                            <ArrowLeft className="w-5 h-5" />
-                        </Link>
-                        <div>
-                            <p className="text-xs text-neutral-500">
-                                {new Date(
-                                    session.started_at
-                                ).toLocaleTimeString("pl-PL", {
-                                    hour: "2-digit",
-                                    minute: "2-digit",
-                                })}
-                            </p>
-                        </div>
-                    </>
+                    <Link
+                        href="/dashboard"
+                        className="text-neutral-400 hover:text-neutral-100"
+                    >
+                        <ArrowLeft className="w-5 h-5" />
+                    </Link>
                 }
                 title={session.name.toUpperCase()}
                 buttons={[
                     <button
-                        key="complete"
-                        onClick={completeWorkout}
-                        disabled={completing}
-                        className="flex items-center gap-2 bg-orange-500 text-white px-3 py-1.5 rounded-lg hover:bg-orange-600 transition-colors disabled:opacity-50 text-xs"
+                        key="list"
+                        onClick={() => setShowExerciseList(true)}
+                        className="flex items-center gap-2 bg-neutral-800 text-neutral-300 px-3 py-1.5 rounded-lg hover:bg-neutral-700 transition-colors text-xs"
                     >
-                        {completing ? (
-                            <Loader2 className="w-4 h-4 animate-spin" />
-                        ) : (
-                            <>
-                                <Trophy className="w-4 h-4" />
-                                <span className="hidden sm:inline">
-                                    Zakończ
-                                </span>
-                            </>
-                        )}
+                        <List className="w-4 h-4" />
+                        <span className="hidden sm:inline">Lista</span>
                     </button>,
                 ]}
             />
 
-            <main className="max-w-4xl mx-auto px-4 py-6">
-                {/* Exercise List - Desktop/Tablet View */}
-                <div className="hidden md:block mb-6">
-                    <div className="bg-neutral-900 rounded-lg  overflow-hidden">
-                        {exerciseLogs.map((log, idx) => {
-                            const completedSets = log.sets.filter(
-                                (s) => s.completed
-                            ).length;
-                            const totalSets = log.sets.length;
-                            const isComplete = completedSets === totalSets;
-
-                            return (
-                                <button
-                                    key={log.id}
-                                    onClick={() => setSelectedExercise(log)}
-                                    className={`w-full flex items-center justify-between p-4 border-b last:border-b-0 hover:bg-neutral-950 transition-colors ${
-                                        selectedExercise?.id === log.id
-                                            ? "bg-blue-500/10"
-                                            : ""
-                                    }`}
-                                >
-                                    <div className="flex items-center gap-4">
-                                        <div
-                                            className={`w-6 h-6 rounded-full flex items-center justify-center font-bold ${
-                                                isComplete
-                                                    ? "bg-orange-500/100 text-white"
-                                                    : "bg-neutral-700 text-neutral-400"
-                                            }`}
-                                        >
-                                            {isComplete ? (
-                                                <Check className="w-5 h-5" />
-                                            ) : (
-                                                idx + 1
-                                            )}
-                                        </div>
-                                        <div className="text-left">
-                                            <h3 className="font-semibold text-neutral-100">
-                                                {log.exercise.name}
-                                            </h3>
-                                            <p className="text-sm text-neutral-500">
-                                                {completedSets}/{totalSets}{" "}
-                                                serii
-                                            </p>
-                                        </div>
-                                    </div>
-                                    <ChevronRight className="w-5 h-5 text-neutral-600" />
-                                </button>
-                            );
-                        })}
+            {/* Progress Bar */}
+            <div className="bg-neutral-900 border-b border-neutral-800 px-4 py-2">
+                <div className="max-w-4xl mx-auto">
+                    <div className="flex items-center justify-between mb-1.5">
+                        <span className="text-xs text-neutral-400">
+                            Postęp treningu
+                        </span>
+                        <span className="text-xs text-neutral-400">
+                            {completedExercises} / {exerciseLogs.length} ćwiczeń
+                        </span>
+                    </div>
+                    <div className="h-2 bg-neutral-800 rounded-full overflow-hidden">
+                        <div
+                            className="h-full bg-orange-500 transition-all duration-300"
+                            style={{ width: `${progressPercentage}%` }}
+                        />
                     </div>
                 </div>
+            </div>
 
-                {/* Selected Exercise - Set Logging */}
-                {selectedExercise && (
-                    <div className="bg-neutral-900 rounded-lg  p-6">
-                        <div className="flex items-center justify-between mb-6">
+            {/* Exercise List Modal */}
+            {showExerciseList && (
+                <div className="fixed inset-0 bg-neutral-950/95 z-50 flex items-center justify-center p-4">
+                    <div className="bg-neutral-900 rounded-lg max-w-2xl w-full max-h-[80vh] overflow-y-auto border border-neutral-800">
+                        <div className="sticky top-0 bg-neutral-900 border-b border-neutral-800 p-4 flex items-center justify-between">
                             <h2 className="text-sm font-bold text-neutral-100">
-                                {selectedExercise.exercise.name}
+                                LISTA ĆWICZEŃ
                             </h2>
                             <button
-                                onClick={() => setSelectedExercise(null)}
-                                className="md:hidden text-neutral-600 hover:text-neutral-400"
+                                onClick={() => setShowExerciseList(false)}
+                                className="text-neutral-400 hover:text-neutral-100"
                             >
                                 <X className="w-5 h-5" />
                             </button>
                         </div>
+                        <div>
+                            {exerciseLogs.map((log, idx) => {
+                                const completedSets = log.sets.filter(
+                                    (s) => s.completed
+                                ).length;
+                                const totalSets = log.sets.length;
+                                const isComplete = completedSets === totalSets;
+                                const isCurrent = idx === currentExerciseIndex;
 
-                        <div className="space-y-4">
+                                return (
+                                    <button
+                                        key={log.id}
+                                        onClick={() =>
+                                            selectExerciseFromList(idx)
+                                        }
+                                        className={`w-full flex items-center justify-between p-4 border-b last:border-b-0 hover:bg-neutral-800 transition-colors ${
+                                            isCurrent ? "bg-neutral-800" : ""
+                                        }`}
+                                    >
+                                        <div className="flex items-center gap-3">
+                                            <div
+                                                className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs ${
+                                                    isComplete
+                                                        ? "bg-orange-500 text-white"
+                                                        : "bg-neutral-800 text-neutral-400"
+                                                }`}
+                                            >
+                                                {isComplete ? (
+                                                    <Check className="w-4 h-4" />
+                                                ) : (
+                                                    idx + 1
+                                                )}
+                                            </div>
+                                            <div className="text-left">
+                                                <h3 className="font-semibold text-sm text-neutral-100">
+                                                    {log.exercise.name}
+                                                </h3>
+                                                <p className="text-xs text-neutral-500">
+                                                    {completedSets}/{totalSets}{" "}
+                                                    serii
+                                                </p>
+                                            </div>
+                                        </div>
+                                        <ChevronRight className="w-4 h-4 text-neutral-600" />
+                                    </button>
+                                );
+                            })}
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Main Content */}
+            <main className="flex-1 max-w-4xl mx-auto w-full px-4 py-6">
+                {selectedExercise && (
+                    <div className="bg-neutral-900/50 border border-neutral-800 rounded-lg p-4">
+                        <div className="mb-4">
+                            <h2 className="text-lg font-bold text-neutral-100 mb-1">
+                                {selectedExercise.exercise.name}
+                            </h2>
+                            <p className="text-xs text-neutral-500">
+                                Ćwiczenie {currentExerciseIndex + 1} z{" "}
+                                {exerciseLogs.length}
+                            </p>
+                        </div>
+
+                        <div className="space-y-3">
                             {selectedExercise.sets.map((set, idx) => (
                                 <SetInput
                                     key={set.id}
@@ -324,100 +378,56 @@ export default function WorkoutSessionPage() {
                                 />
                             ))}
                         </div>
-
-                        {/* Mobile Exercise Navigation */}
-                        <div className="md:hidden mt-6 flex gap-2">
-                            {exerciseLogs.map((log, idx) => {
-                                const isComplete = log.sets.every(
-                                    (s) => s.completed
-                                );
-                                const isCurrent =
-                                    selectedExercise?.id === log.id;
-
-                                return (
-                                    <button
-                                        key={log.id}
-                                        onClick={() => setSelectedExercise(log)}
-                                        className={`flex-1 py-3 rounded-lg font-medium transition-colors ${
-                                            isCurrent
-                                                ? "bg-orange-500 text-white"
-                                                : isComplete
-                                                ? "bg-orange-500/20 text-orange-400"
-                                                : "bg-neutral-800 text-neutral-300"
-                                        }`}
-                                    >
-                                        {isComplete ? "✓" : idx + 1}
-                                    </button>
-                                );
-                            })}
-                        </div>
-                    </div>
-                )}
-
-                {/* Mobile Exercise List - When none selected */}
-                {!selectedExercise && (
-                    <div className="md:hidden bg-neutral-900 rounded-lg  overflow-hidden">
-                        {exerciseLogs.map((log, idx) => {
-                            const completedSets = log.sets.filter(
-                                (s) => s.completed
-                            ).length;
-                            const totalSets = log.sets.length;
-                            const isComplete = completedSets === totalSets;
-
-                            return (
-                                <button
-                                    key={log.id}
-                                    onClick={() => setSelectedExercise(log)}
-                                    className="w-full flex items-center justify-between p-4 border-b last:border-b-0 active:bg-neutral-950"
-                                >
-                                    <div className="flex items-center gap-4">
-                                        <div
-                                            className={`w-10 h-10 rounded-full flex items-center justify-center font-bold ${
-                                                isComplete
-                                                    ? "bg-orange-500/100 text-white"
-                                                    : "bg-neutral-700 text-neutral-400"
-                                            }`}
-                                        >
-                                            {isComplete ? (
-                                                <Check className="w-5 h-5" />
-                                            ) : (
-                                                idx + 1
-                                            )}
-                                        </div>
-                                        <div className="text-left">
-                                            <h3 className="font-semibold text-neutral-100">
-                                                {log.exercise.name}
-                                            </h3>
-                                            <p className="text-sm text-neutral-500">
-                                                {completedSets}/{totalSets}{" "}
-                                                serii
-                                            </p>
-                                        </div>
-                                    </div>
-                                    <ChevronRight className="w-5 h-5 text-neutral-600" />
-                                </button>
-                            );
-                        })}
-                    </div>
-                )}
-
-                {allSetsCompleted && (
-                    <div className="mt-6 bg-orange-500 text-white rounded-lg p-4 text-center ">
-                        <Trophy className="w-6 h-6 mx-auto mb-3" />
-                        <h3 className="text-sm font-bold mb-2">
-                            Świetna robota!
-                        </h3>
-                        <p className="mb-4">Ukończyłeś wszystkie serie</p>
-                        <button
-                            onClick={completeWorkout}
-                            disabled={completing}
-                            className="bg-neutral-900 text-orange-400 px-4 py-2 rounded-lg font-semibold hover:bg-orange-500/10 transition-colors disabled:opacity-50"
-                        >
-                            {completing ? "Zapisywanie..." : "Zakończ trening"}
-                        </button>
                     </div>
                 )}
             </main>
+
+            {/* Bottom Navigation */}
+            <div className="sticky bottom-0 bg-neutral-900 border-t border-neutral-800 px-4 py-3">
+                <div className="max-w-4xl mx-auto">
+                    {allSetsCompleted ? (
+                        <button
+                            onClick={completeWorkout}
+                            disabled={completing}
+                            className="w-full flex items-center justify-center gap-2 bg-orange-500 text-white py-3 rounded-lg hover:bg-orange-600 transition-colors disabled:opacity-50 font-semibold text-sm"
+                        >
+                            {completing ? (
+                                <>
+                                    <Loader2 className="w-5 h-5 animate-spin" />
+                                    Zapisywanie...
+                                </>
+                            ) : (
+                                <>
+                                    <Trophy className="w-5 h-5" />
+                                    Zakończ trening
+                                </>
+                            )}
+                        </button>
+                    ) : (
+                        <div className="flex gap-3">
+                            <button
+                                onClick={goToPreviousExercise}
+                                disabled={currentExerciseIndex === 0}
+                                className="flex-1 flex items-center justify-center gap-2 bg-neutral-800 text-neutral-300 py-3 rounded-lg hover:bg-neutral-700 transition-colors disabled:opacity-30 disabled:cursor-not-allowed font-medium text-sm"
+                            >
+                                <ChevronLeft className="w-5 h-5" />
+                                Poprzednie
+                            </button>
+                            <button
+                                onClick={goToNextExercise}
+                                disabled={
+                                    currentExerciseIndex ===
+                                    exerciseLogs.length - 1
+                                }
+                                className="flex-1 flex items-center justify-center gap-2 bg-orange-500 text-white py-3 rounded-lg hover:bg-orange-600 transition-colors disabled:opacity-30 disabled:cursor-not-allowed font-medium text-sm"
+                            >
+                                Następne
+                                <ChevronRight className="w-5 h-5" />
+                            </button>
+                        </div>
+                    )}
+                </div>
+            </div>
         </div>
     );
 }
@@ -429,15 +439,15 @@ interface SetInputProps {
 }
 
 function SetInput({ set, setNumber, onUpdate }: SetInputProps) {
-    const [reps, setReps] = useState(set.reps || 0);
-    const [weight, setWeight] = useState(set.weight || 0);
-    const [rir, setRir] = useState(set.rir ?? 0);
+    const [reps, setReps] = useState<number | string>(set.reps || "");
+    const [weight, setWeight] = useState<number | string>(set.weight || "");
+    const [rir, setRir] = useState<number | string>(set.rir ?? "");
 
     const handleComplete = () => {
         onUpdate({
             reps: Number(reps) || 0,
             weight: Number(weight) || 0,
-            rir: Number(rir) ?? null,
+            rir: Number(rir) || 0,
             completed: true,
         });
     };
@@ -498,7 +508,7 @@ function SetInput({ set, setNumber, onUpdate }: SetInputProps) {
                         Powtórzenia
                     </label>
                     <input
-                        type="number"
+                        type="text"
                         inputMode="numeric"
                         value={reps}
                         onChange={(e) => setReps(Number(e.target.value) || 0)}
@@ -512,7 +522,7 @@ function SetInput({ set, setNumber, onUpdate }: SetInputProps) {
                         Ciężar (kg)
                     </label>
                     <input
-                        type="number"
+                        type="text"
                         inputMode="decimal"
                         step="0.5"
                         value={weight}
@@ -527,7 +537,7 @@ function SetInput({ set, setNumber, onUpdate }: SetInputProps) {
                         RIR
                     </label>
                     <input
-                        type="number"
+                        type="text"
                         inputMode="numeric"
                         value={rir}
                         onChange={(e) => setRir(Number(e.target.value) || 0)}
