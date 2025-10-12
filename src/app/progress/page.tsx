@@ -12,6 +12,10 @@ import {
     Loader2,
     Target,
     Zap,
+    Trophy,
+    Activity,
+    Clock,
+    TrendingDown,
 } from "lucide-react";
 import Link from "next/link";
 import Header from "../../../components/header";
@@ -46,6 +50,10 @@ export default function ProgressPage() {
         totalSets: 0,
         totalVolume: 0,
         avgDuration: 0,
+        bestVolume: 0,
+        avgWeight: 0,
+        totalReps: 0,
+        longestWorkout: 0,
     });
     const [comparisonStats, setComparisonStats] = useState({
         workoutChange: 0,
@@ -125,6 +133,10 @@ export default function ProgressPage() {
                     totalSets: 0,
                     totalVolume: 0,
                     avgDuration: 0,
+                    bestVolume: 0,
+                    avgWeight: 0,
+                    totalReps: 0,
+                    longestWorkout: 0,
                 });
                 setWorkoutData([]);
                 setVolumeData([]);
@@ -156,6 +168,17 @@ export default function ProgressPage() {
                 (sum, set) => sum + set.reps * (set.weight || 0),
                 0
             );
+            const totalReps = (sets || []).reduce(
+                (sum, set) => sum + set.reps,
+                0
+            );
+            const avgWeight =
+                totalSets > 0
+                    ? (sets || []).reduce(
+                          (sum, set) => sum + (set.weight || 0),
+                          0
+                      ) / totalSets
+                    : 0;
 
             // Calculate average duration (only for completed workouts)
             const completedSessions = (sessions || []).filter(
@@ -173,11 +196,48 @@ export default function ProgressPage() {
                       60 // Convert to minutes
                     : 0;
 
+            // Find longest workout
+            const longestWorkout =
+                completedSessions.length > 0
+                    ? Math.max(
+                          ...completedSessions.map((s) => {
+                              const start = new Date(s.started_at).getTime();
+                              const end = new Date(s.completed_at!).getTime();
+                              return (end - start) / 1000 / 60;
+                          })
+                      )
+                    : 0;
+
+            // Find best volume workout
+            const volumeBySession: Record<string, number> = {};
+            (sessions || []).forEach((session) => {
+                const sessionLogs = (exerciseLogs || []).filter(
+                    (l) => l.workout_session_id === session.id
+                );
+                const sessionLogIds = sessionLogs.map((l) => l.id);
+                const sessionSets = (sets || []).filter((s) =>
+                    sessionLogIds.includes(s.exercise_log_id)
+                );
+                const volume = sessionSets.reduce(
+                    (sum, set) => sum + set.reps * (set.weight || 0),
+                    0
+                );
+                volumeBySession[session.id] = volume;
+            });
+            const bestVolume =
+                Object.keys(volumeBySession).length > 0
+                    ? Math.max(...Object.values(volumeBySession))
+                    : 0;
+
             setStats({
                 totalWorkouts: (sessions || []).length,
                 totalSets,
                 totalVolume: Math.round(totalVolume),
                 avgDuration: Math.round(avgDuration),
+                bestVolume: Math.round(bestVolume),
+                avgWeight: Math.round(avgWeight * 10) / 10,
+                totalReps,
+                longestWorkout: Math.round(longestWorkout),
             });
 
             // Calculate comparison period stats
@@ -384,94 +444,151 @@ export default function ProgressPage() {
 
                 {/* Stats Cards */}
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
-                    <div className="bg-blue-500 border border-blue-400 rounded-lg p-4 text-white">
+                    <div className="bg-neutral-900 border border-neutral-800 rounded-lg p-4">
                         <div className="flex items-center gap-2 mb-2">
-                            <Calendar className="w-4 h-4 opacity-80" />
-                            <span className="text-xs opacity-80">Treningi</span>
+                            <Calendar className="w-4 h-4 text-blue-400" />
+                            <span className="text-xs text-neutral-400">
+                                Treningi
+                            </span>
                         </div>
-                        <p className="text-xl font-bold">
+                        <p className="text-2xl font-bold text-neutral-100">
                             {stats.totalWorkouts}
                         </p>
                         {comparisonStats.workoutChange !== 0 && (
                             <p
-                                className={`text-xs mt-1 flex items-center gap-1 ${
+                                className={`text-xs mt-1 ${
                                     comparisonStats.workoutChange > 0
-                                        ? "text-green-300"
-                                        : "text-red-300"
+                                        ? "text-green-400"
+                                        : "text-red-400"
                                 }`}
                             >
                                 {comparisonStats.workoutChange > 0 ? "↑" : "↓"}
-                                {Math.abs(comparisonStats.workoutChange)}% vs
-                                poprzedni okres
+                                {Math.abs(comparisonStats.workoutChange)}%
                             </p>
                         )}
                     </div>
 
-                    <div className="bg-blue-500 border border-blue-400 rounded-lg p-4 text-white">
+                    <div className="bg-neutral-900 border border-neutral-800 rounded-lg p-4">
                         <div className="flex items-center gap-2 mb-2">
-                            <Target className="w-4 h-4 opacity-80" />
-                            <span className="text-xs opacity-80">Serie</span>
+                            <Target className="w-4 h-4 text-orange-500" />
+                            <span className="text-xs text-neutral-400">
+                                Serie
+                            </span>
                         </div>
-                        <p className="text-xl font-bold">{stats.totalSets}</p>
+                        <p className="text-2xl font-bold text-neutral-100">
+                            {stats.totalSets}
+                        </p>
                         {comparisonStats.setsChange !== 0 && (
                             <p
-                                className={`text-xs mt-1 flex items-center gap-1 ${
+                                className={`text-xs mt-1 ${
                                     comparisonStats.setsChange > 0
-                                        ? "text-green-300"
-                                        : "text-red-300"
+                                        ? "text-green-400"
+                                        : "text-red-400"
                                 }`}
                             >
                                 {comparisonStats.setsChange > 0 ? "↑" : "↓"}
-                                {Math.abs(comparisonStats.setsChange)}% vs
-                                poprzedni okres
+                                {Math.abs(comparisonStats.setsChange)}%
                             </p>
                         )}
                     </div>
 
-                    <div className="bg-orange-500 border border-orange-400 rounded-lg p-4 text-white">
+                    <div className="bg-neutral-900 border border-neutral-800 rounded-lg p-4">
                         <div className="flex items-center gap-2 mb-2">
-                            <Dumbbell className="w-4 h-4 opacity-80" />
-                            <span className="text-xs opacity-80">Objętość</span>
+                            <Dumbbell className="w-4 h-4 text-blue-400" />
+                            <span className="text-xs text-neutral-400">
+                                Objętość
+                            </span>
                         </div>
-                        <p className="text-xl font-bold">{stats.totalVolume}</p>
-                        <p className="text-xs opacity-80 mt-1">
-                            kg × powtórzenia
+                        <p className="text-2xl font-bold text-neutral-100">
+                            {stats.totalVolume > 1000
+                                ? `${(stats.totalVolume / 1000).toFixed(1)}k`
+                                : stats.totalVolume}
                         </p>
                         {comparisonStats.volumeChange !== 0 && (
                             <p
-                                className={`text-xs mt-1 flex items-center gap-1 ${
+                                className={`text-xs mt-1 ${
                                     comparisonStats.volumeChange > 0
-                                        ? "text-green-300"
-                                        : "text-red-300"
+                                        ? "text-green-400"
+                                        : "text-red-400"
                                 }`}
                             >
                                 {comparisonStats.volumeChange > 0 ? "↑" : "↓"}
-                                {Math.abs(comparisonStats.volumeChange)}% vs
-                                poprzedni okres
+                                {Math.abs(comparisonStats.volumeChange)}%
                             </p>
                         )}
                     </div>
 
-                    <div className="bg-orange-500 border border-orange-400 rounded-lg p-4 text-white">
+                    <div className="bg-neutral-900 border border-neutral-800 rounded-lg p-4">
                         <div className="flex items-center gap-2 mb-2">
-                            <Zap className="w-4 h-4 opacity-80" />
-                            <span className="text-xs opacity-80">Śr. czas</span>
+                            <Clock className="w-4 h-4 text-orange-500" />
+                            <span className="text-xs text-neutral-400">
+                                Śr. czas
+                            </span>
                         </div>
-                        <p className="text-xl font-bold">{stats.avgDuration}</p>
-                        <p className="text-xs opacity-80 mt-1">minut</p>
-                        {comparisonStats.durationChange !== 0 && (
-                            <p
-                                className={`text-xs mt-1 flex items-center gap-1 ${
-                                    comparisonStats.durationChange > 0
-                                        ? "text-red-300"
-                                        : "text-green-300"
-                                }`}
-                            >
-                                {comparisonStats.durationChange > 0 ? "↑" : "↓"}
-                                {Math.abs(comparisonStats.durationChange)}% vs
-                                poprzedni okres
-                            </p>
-                        )}
+                        <p className="text-2xl font-bold text-neutral-100">
+                            {stats.avgDuration}
+                        </p>
+                        <p className="text-xs text-neutral-500 mt-1">minut</p>
+                    </div>
+
+                    <div className="bg-neutral-900 border border-neutral-800 rounded-lg p-4">
+                        <div className="flex items-center gap-2 mb-2">
+                            <Trophy className="w-4 h-4 text-blue-400" />
+                            <span className="text-xs text-neutral-400">
+                                Najlepszy
+                            </span>
+                        </div>
+                        <p className="text-2xl font-bold text-neutral-100">
+                            {stats.bestVolume > 1000
+                                ? `${(stats.bestVolume / 1000).toFixed(1)}k`
+                                : stats.bestVolume}
+                        </p>
+                        <p className="text-xs text-neutral-500 mt-1">
+                            objętość
+                        </p>
+                    </div>
+
+                    <div className="bg-neutral-900 border border-neutral-800 rounded-lg p-4">
+                        <div className="flex items-center gap-2 mb-2">
+                            <Activity className="w-4 h-4 text-orange-500" />
+                            <span className="text-xs text-neutral-400">
+                                Śr. ciężar
+                            </span>
+                        </div>
+                        <p className="text-2xl font-bold text-neutral-100">
+                            {stats.avgWeight}
+                        </p>
+                        <p className="text-xs text-neutral-500 mt-1">kg</p>
+                    </div>
+
+                    <div className="bg-neutral-900 border border-neutral-800 rounded-lg p-4">
+                        <div className="flex items-center gap-2 mb-2">
+                            <TrendingUp className="w-4 h-4 text-blue-400" />
+                            <span className="text-xs text-neutral-400">
+                                Powtórzenia
+                            </span>
+                        </div>
+                        <p className="text-2xl font-bold text-neutral-100">
+                            {stats.totalReps > 1000
+                                ? `${(stats.totalReps / 1000).toFixed(1)}k`
+                                : stats.totalReps}
+                        </p>
+                        <p className="text-xs text-neutral-500 mt-1">
+                            wszystkie
+                        </p>
+                    </div>
+
+                    <div className="bg-neutral-900 border border-neutral-800 rounded-lg p-4">
+                        <div className="flex items-center gap-2 mb-2">
+                            <Zap className="w-4 h-4 text-orange-500" />
+                            <span className="text-xs text-neutral-400">
+                                Najdłuższy
+                            </span>
+                        </div>
+                        <p className="text-2xl font-bold text-neutral-100">
+                            {stats.longestWorkout}
+                        </p>
+                        <p className="text-xs text-neutral-500 mt-1">minut</p>
                     </div>
                 </div>
 
