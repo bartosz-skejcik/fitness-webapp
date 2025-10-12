@@ -26,8 +26,12 @@ export default function NewTemplatePage() {
         ExerciseWithSets[]
     >([]);
     const [allExercises, setAllExercises] = useState<Exercise[]>([]);
+    const [suggestedExercises, setSuggestedExercises] = useState<Exercise[]>(
+        []
+    );
     const [showExercisePicker, setShowExercisePicker] = useState(false);
     const [newExerciseName, setNewExerciseName] = useState("");
+    const [searchQuery, setSearchQuery] = useState("");
     const [loading, setLoading] = useState(false);
     const [saving, setSaving] = useState(false);
 
@@ -37,12 +41,20 @@ export default function NewTemplatePage() {
         }
     }, [user]);
 
+    useEffect(() => {
+        // Update suggestions when workout type or exercises change
+        if (user) {
+            fetchSuggestedExercises();
+        }
+    }, [workoutType, allExercises]);
+
     async function fetchExercises() {
         setLoading(true);
         try {
             const { data, error } = await supabase
                 .from("exercises")
                 .select("*")
+                .eq("user_id", user?.id)
                 .order("name");
 
             if (error) throw error;
@@ -51,6 +63,69 @@ export default function NewTemplatePage() {
             console.error("Error fetching exercises:", error);
         } finally {
             setLoading(false);
+        }
+    }
+
+    async function fetchSuggestedExercises() {
+        if (!user) return;
+
+        try {
+            // Get exercises used in this workout type
+            const { data: templateExercises, error } = await supabase
+                .from("workout_templates")
+                .select(
+                    `
+                    id,
+                    workout_type,
+                    workout_template_exercises (
+                        exercise_id,
+                        exercises (*)
+                    )
+                `
+                )
+                .eq("user_id", user.id)
+                .eq("workout_type", workoutType);
+
+            if (error) throw error;
+
+            // Count exercise usage frequency
+            const exerciseUsage = new Map<
+                string,
+                { exercise: Exercise; count: number }
+            >();
+
+            templateExercises?.forEach((template) => {
+                const templateExercisesList =
+                    template.workout_template_exercises as unknown as Array<{
+                        exercise_id: string;
+                        exercises: Exercise;
+                    }>;
+
+                templateExercisesList?.forEach((te) => {
+                    if (te.exercises) {
+                        const exerciseId = te.exercise_id;
+                        const current = exerciseUsage.get(exerciseId);
+                        if (current) {
+                            current.count++;
+                        } else {
+                            exerciseUsage.set(exerciseId, {
+                                exercise: te.exercises,
+                                count: 1,
+                            });
+                        }
+                    }
+                });
+            });
+
+            // Sort by usage frequency
+            const suggested = Array.from(exerciseUsage.values())
+                .sort((a, b) => b.count - a.count)
+                .map((item) => item.exercise)
+                .slice(0, 5); // Top 5 most used
+
+            setSuggestedExercises(suggested);
+        } catch (error) {
+            console.error("Error fetching suggested exercises:", error);
         }
     }
 
@@ -82,8 +157,7 @@ export default function NewTemplatePage() {
     function addExercise(exercise: Exercise) {
         const exists = selectedExercises.find((e) => e.id === exercise.id);
         if (exists) {
-            alert("To ćwiczenie jest już dodane");
-            return;
+            return; // Silently ignore if already added (button is disabled anyway)
         }
 
         setSelectedExercises([
@@ -94,7 +168,7 @@ export default function NewTemplatePage() {
                 order_index: selectedExercises.length,
             },
         ]);
-        setShowExercisePicker(false);
+        setSearchQuery(""); // Clear search after adding
     }
 
     function removeExercise(index: number) {
@@ -272,11 +346,11 @@ export default function NewTemplatePage() {
                     {showExercisePicker && (
                         <div className="mb-3 p-3 bg-neutral-800/50 border border-neutral-700 rounded-lg">
                             <h3 className="font-medium text-neutral-100 text-xs mb-2">
-                                Wybierz ćwiczenie
+                                Wybierz lub utwórz ćwiczenie
                             </h3>
 
                             <div className="mb-3">
-                                <div className="flex gap-2">
+                                <div className="flex gap-2 mb-2">
                                     <input
                                         type="text"
                                         value={newExerciseName}
@@ -292,35 +366,163 @@ export default function NewTemplatePage() {
                                     />
                                     <button
                                         onClick={createNewExercise}
-                                        className="bg-orange-500 text-white px-3 py-2 rounded-lg hover:bg-orange-600 transition-colors text-xs"
+                                        className="bg-orange-500 text-white px-3 py-2 rounded-lg hover:bg-orange-600 transition-colors text-xs whitespace-nowrap"
                                     >
-                                        Utwórz
+                                        Utwórz nowe
                                     </button>
                                 </div>
+                                <input
+                                    type="text"
+                                    value={searchQuery}
+                                    onChange={(e) =>
+                                        setSearchQuery(e.target.value)
+                                    }
+                                    placeholder="Szukaj ćwiczenia..."
+                                    className="w-full px-3 py-2 bg-neutral-900 border border-neutral-700 text-neutral-100 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-xs placeholder:text-neutral-600"
+                                />
                             </div>
 
-                            <div className="max-h-60 overflow-y-auto space-y-1.5">
+                            <div className="max-h-60 overflow-y-auto space-y-3">
                                 {loading ? (
                                     <div className="text-center py-4">
                                         <Loader2 className="w-5 h-5 animate-spin text-orange-500 mx-auto" />
                                     </div>
-                                ) : allExercises.length === 0 ? (
-                                    <p className="text-neutral-500 text-center py-4 text-xs">
-                                        Brak ćwiczeń. Utwórz pierwsze ćwiczenie
-                                        powyżej.
-                                    </p>
                                 ) : (
-                                    allExercises.map((exercise) => (
-                                        <button
-                                            key={exercise.id}
-                                            onClick={() =>
-                                                addExercise(exercise)
-                                            }
-                                            className="w-full text-left px-3 py-2 bg-neutral-900 border border-neutral-700 rounded-lg hover:border-blue-500 hover:bg-neutral-800 transition-colors text-neutral-100 text-xs"
-                                        >
-                                            {exercise.name}
-                                        </button>
-                                    ))
+                                    <>
+                                        {/* Suggested exercises */}
+                                        {suggestedExercises.length > 0 &&
+                                            !searchQuery && (
+                                                <div>
+                                                    <h4 className="text-xs font-semibold text-orange-500 mb-1.5 flex items-center gap-1">
+                                                        <span>⭐</span>{" "}
+                                                        Sugerowane dla tego typu
+                                                        treningu
+                                                    </h4>
+                                                    <div className="space-y-1.5">
+                                                        {suggestedExercises.map(
+                                                            (exercise) => {
+                                                                const isSelected =
+                                                                    selectedExercises.some(
+                                                                        (e) =>
+                                                                            e.id ===
+                                                                            exercise.id
+                                                                    );
+                                                                return (
+                                                                    <button
+                                                                        key={
+                                                                            exercise.id
+                                                                        }
+                                                                        onClick={() =>
+                                                                            addExercise(
+                                                                                exercise
+                                                                            )
+                                                                        }
+                                                                        disabled={
+                                                                            isSelected
+                                                                        }
+                                                                        className={`w-full text-left px-3 py-2 border rounded-lg transition-colors text-xs ${
+                                                                            isSelected
+                                                                                ? "bg-neutral-800 border-neutral-600 text-neutral-500 cursor-not-allowed"
+                                                                                : "bg-neutral-900 border-orange-500/50 hover:border-orange-500 hover:bg-neutral-800 text-neutral-100"
+                                                                        }`}
+                                                                    >
+                                                                        {
+                                                                            exercise.name
+                                                                        }
+                                                                        {isSelected && (
+                                                                            <span className="ml-2 text-neutral-600">
+                                                                                ✓
+                                                                                Dodane
+                                                                            </span>
+                                                                        )}
+                                                                    </button>
+                                                                );
+                                                            }
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            )}
+
+                                        {/* All exercises */}
+                                        <div>
+                                            {suggestedExercises.length > 0 &&
+                                                !searchQuery && (
+                                                    <h4 className="text-xs font-semibold text-neutral-400 mb-1.5">
+                                                        Wszystkie ćwiczenia
+                                                    </h4>
+                                                )}
+                                            {allExercises.length === 0 ? (
+                                                <p className="text-neutral-500 text-center py-4 text-xs">
+                                                    Brak ćwiczeń. Utwórz
+                                                    pierwsze ćwiczenie powyżej.
+                                                </p>
+                                            ) : (
+                                                <div className="space-y-1.5">
+                                                    {allExercises
+                                                        .filter((exercise) => {
+                                                            // Filter by search query
+                                                            if (searchQuery) {
+                                                                return exercise.name
+                                                                    .toLowerCase()
+                                                                    .includes(
+                                                                        searchQuery.toLowerCase()
+                                                                    );
+                                                            }
+                                                            // Don't show suggested exercises in "all" list
+                                                            if (
+                                                                !searchQuery &&
+                                                                suggestedExercises.some(
+                                                                    (s) =>
+                                                                        s.id ===
+                                                                        exercise.id
+                                                                )
+                                                            ) {
+                                                                return false;
+                                                            }
+                                                            return true;
+                                                        })
+                                                        .map((exercise) => {
+                                                            const isSelected =
+                                                                selectedExercises.some(
+                                                                    (e) =>
+                                                                        e.id ===
+                                                                        exercise.id
+                                                                );
+                                                            return (
+                                                                <button
+                                                                    key={
+                                                                        exercise.id
+                                                                    }
+                                                                    onClick={() =>
+                                                                        addExercise(
+                                                                            exercise
+                                                                        )
+                                                                    }
+                                                                    disabled={
+                                                                        isSelected
+                                                                    }
+                                                                    className={`w-full text-left px-3 py-2 border rounded-lg transition-colors text-xs ${
+                                                                        isSelected
+                                                                            ? "bg-neutral-800 border-neutral-600 text-neutral-500 cursor-not-allowed"
+                                                                            : "bg-neutral-900 border-neutral-700 hover:border-blue-500 hover:bg-neutral-800 text-neutral-100"
+                                                                    }`}
+                                                                >
+                                                                    {
+                                                                        exercise.name
+                                                                    }
+                                                                    {isSelected && (
+                                                                        <span className="ml-2 text-neutral-600">
+                                                                            ✓
+                                                                            Dodane
+                                                                        </span>
+                                                                    )}
+                                                                </button>
+                                                            );
+                                                        })}
+                                                </div>
+                                            )}
+                                        </div>
+                                    </>
                                 )}
                             </div>
                         </div>
