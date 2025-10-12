@@ -62,3 +62,21 @@ export interface SetLog {
     completed: boolean;
     created_at: string;
 }
+
+export type FriendshipStatus = "pending" | "accepted" | "rejected";
+
+export interface Friendship {
+    id: string;
+    user_id: string;
+    friend_id: string;
+    status: FriendshipStatus;
+    created_at: string;
+    updated_at: string;
+}
+
+export interface UserProfile {
+    id: string;
+    email?: string;
+    full_name?: string;
+    avatar_url?: string;
+}
