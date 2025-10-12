@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
@@ -41,27 +41,37 @@ export default function ProgressPage() {
 
     const [loading, setLoading] = useState(true);
     const [period, setPeriod] = useState<TimePeriod>("1month");
-    const [workoutData, setWorkoutData] = useState<
-        Array<{ date: string; treningi: number }>
-    >([]);
-    const [volumeData, setVolumeData] = useState<
-        Array<{ date: string; objętość: number }>
-    >([]);
-    const [stats, setStats] = useState({
-        totalWorkouts: 0,
-        totalSets: 0,
-        totalVolume: 0,
-        avgDuration: 0,
-        bestVolume: 0,
-        avgWeight: 0,
-        totalReps: 0,
-        longestWorkout: 0,
-    });
-    const [comparisonStats, setComparisonStats] = useState({
-        workoutChange: 0,
-        volumeChange: 0,
-        setsChange: 0,
-        durationChange: 0,
+
+    // Cache data for all periods
+    const [cachedData, setCachedData] = useState<
+        Record<
+            TimePeriod,
+            {
+                workoutData: Array<{ date: string; treningi: number }>;
+                volumeData: Array<{ date: string; objętość: number }>;
+                stats: {
+                    totalWorkouts: number;
+                    totalSets: number;
+                    totalVolume: number;
+                    avgDuration: number;
+                    bestVolume: number;
+                    avgWeight: number;
+                    totalReps: number;
+                    longestWorkout: number;
+                };
+                comparisonStats: {
+                    workoutChange: number;
+                    volumeChange: number;
+                    setsChange: number;
+                    durationChange: number;
+                };
+            } | null
+        >
+    >({
+        "2weeks": null,
+        "1month": null,
+        "3months": null,
+        "1year": null,
     });
 
     useEffect(() => {
@@ -72,19 +82,46 @@ export default function ProgressPage() {
 
     useEffect(() => {
         if (user) {
-            fetchProgressData();
+            // Load current period first, then others in background
+            loadAllPeriodsData();
         }
-    }, [user, period]);
+    }, [user]);
 
-    async function fetchProgressData() {
+    const loadAllPeriodsData = async () => {
         setLoading(true);
+
+        // Load current period first
+        await fetchProgressDataForPeriod(period);
+        setLoading(false);
+
+        // Load other periods in background
+        const otherPeriods: TimePeriod[] = [
+            "2weeks",
+            "1month",
+            "3months",
+            "1year",
+        ];
+        const periodsToLoad = otherPeriods.filter((p) => p !== period);
+
+        // Load remaining periods sequentially in background
+        for (const p of periodsToLoad) {
+            await fetchProgressDataForPeriod(p);
+        }
+    };
+
+    async function fetchProgressDataForPeriod(selectedPeriod: TimePeriod) {
+        // Return cached data if available
+        if (cachedData[selectedPeriod]) {
+            return;
+        }
+
         try {
             const now = new Date();
             let startDate: Date;
             let comparisonStartDate: Date;
             let comparisonEndDate: Date;
 
-            switch (period) {
+            switch (selectedPeriod) {
                 case "2weeks":
                     startDate = subDays(now, 14);
                     comparisonStartDate = subDays(now, 28);
@@ -130,19 +167,29 @@ export default function ProgressPage() {
             const sessionIds = (sessions || []).map((s) => s.id);
 
             if (sessionIds.length === 0) {
-                setStats({
-                    totalWorkouts: 0,
-                    totalSets: 0,
-                    totalVolume: 0,
-                    avgDuration: 0,
-                    bestVolume: 0,
-                    avgWeight: 0,
-                    totalReps: 0,
-                    longestWorkout: 0,
-                });
-                setWorkoutData([]);
-                setVolumeData([]);
-                setLoading(false);
+                setCachedData((prev) => ({
+                    ...prev,
+                    [selectedPeriod]: {
+                        workoutData: [],
+                        volumeData: [],
+                        stats: {
+                            totalWorkouts: 0,
+                            totalSets: 0,
+                            totalVolume: 0,
+                            avgDuration: 0,
+                            bestVolume: 0,
+                            avgWeight: 0,
+                            totalReps: 0,
+                            longestWorkout: 0,
+                        },
+                        comparisonStats: {
+                            workoutChange: 0,
+                            volumeChange: 0,
+                            setsChange: 0,
+                            durationChange: 0,
+                        },
+                    },
+                }));
                 return;
             }
 
@@ -231,7 +278,7 @@ export default function ProgressPage() {
                     ? Math.max(...Object.values(volumeBySession))
                     : 0;
 
-            setStats({
+            const calculatedStats = {
                 totalWorkouts: (sessions || []).length,
                 totalSets,
                 totalVolume: Math.round(totalVolume),
@@ -240,10 +287,16 @@ export default function ProgressPage() {
                 avgWeight: Math.round(avgWeight * 10) / 10,
                 totalReps,
                 longestWorkout: Math.round(longestWorkout),
-            });
+            };
 
             // Calculate comparison period stats
             const compSessionIds = (comparisonSessions || []).map((s) => s.id);
+            let calculatedComparisonStats = {
+                workoutChange: 0,
+                volumeChange: 0,
+                setsChange: 0,
+                durationChange: 0,
+            };
 
             if (compSessionIds.length > 0) {
                 const { data: compExerciseLogs } = await supabase
@@ -318,19 +371,12 @@ export default function ProgressPage() {
                           )
                         : 0;
 
-                setComparisonStats({
+                calculatedComparisonStats = {
                     workoutChange,
                     volumeChange,
                     setsChange,
                     durationChange,
-                });
-            } else {
-                setComparisonStats({
-                    workoutChange: 0,
-                    volumeChange: 0,
-                    setsChange: 0,
-                    durationChange: 0,
-                });
+                };
             }
 
             // Prepare workout frequency data
@@ -349,8 +395,6 @@ export default function ProgressPage() {
                     treningi: count as number,
                 })
             );
-
-            setWorkoutData(workoutChartData);
 
             // Prepare volume data by date
             const volumeByDate = (sessions || []).reduce((acc, session) => {
@@ -384,11 +428,23 @@ export default function ProgressPage() {
                 })
             );
 
-            setVolumeData(volumeChartData);
+            // Cache all the data for this period
+            setCachedData((prev) => ({
+                ...prev,
+                [selectedPeriod]: {
+                    workoutData: workoutChartData,
+                    volumeData: volumeChartData,
+                    stats: calculatedStats,
+                    comparisonStats: calculatedComparisonStats || {
+                        workoutChange: 0,
+                        volumeChange: 0,
+                        setsChange: 0,
+                        durationChange: 0,
+                    },
+                },
+            }));
         } catch (error) {
             console.error("Error fetching progress data:", error);
-        } finally {
-            setLoading(false);
         }
     }
 
@@ -398,6 +454,34 @@ export default function ProgressPage() {
         { value: "3months" as TimePeriod, label: "3 miesiące" },
         { value: "1year" as TimePeriod, label: "1 rok" },
     ];
+
+    // Get current period data from cache
+    const currentData = useMemo(() => {
+        return (
+            cachedData[period] || {
+                workoutData: [],
+                volumeData: [],
+                stats: {
+                    totalWorkouts: 0,
+                    totalSets: 0,
+                    totalVolume: 0,
+                    avgDuration: 0,
+                    bestVolume: 0,
+                    avgWeight: 0,
+                    totalReps: 0,
+                    longestWorkout: 0,
+                },
+                comparisonStats: {
+                    workoutChange: 0,
+                    volumeChange: 0,
+                    setsChange: 0,
+                    durationChange: 0,
+                },
+            }
+        );
+    }, [period, cachedData]);
+
+    const { workoutData, volumeData, stats, comparisonStats } = currentData;
 
     if (loading) {
         return (
