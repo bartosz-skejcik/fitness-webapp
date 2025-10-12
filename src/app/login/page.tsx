@@ -1,7 +1,6 @@
 "use client";
 
 import { useAuth } from "@/contexts/AuthContext";
-import { LogIn } from "lucide-react";
 
 export default function LoginPage() {
     const { signInWithGoogle, loading } = useAuth();

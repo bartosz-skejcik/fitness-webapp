@@ -5,14 +5,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { Exercise, WorkoutType } from "@/types/database";
-import {
-    ArrowLeft,
-    Plus,
-    Trash2,
-    GripVertical,
-    Save,
-    Loader2,
-} from "lucide-react";
+import { ArrowLeft, Plus, Trash2, Loader2, Save } from "lucide-react";
 import Link from "next/link";
 import Header from "../../../../components/header";
 

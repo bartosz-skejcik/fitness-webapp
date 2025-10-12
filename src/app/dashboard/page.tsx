@@ -16,14 +16,13 @@ import {
     Calendar,
     Target,
     Flame,
-    Trophy,
 } from "lucide-react";
 import Link from "next/link";
 import Header from "../../../components/header";
 import UserMenu from "../../../components/user-menu";
 
 export default function DashboardPage() {
-    const { user, loading: authLoading, signOut } = useAuth();
+    const { user, loading: authLoading } = useAuth();
     const router = useRouter();
     const [templates, setTemplates] = useState<WorkoutTemplate[]>([]);
     const [recentSessions, setRecentSessions] = useState<WorkoutSession[]>([]);

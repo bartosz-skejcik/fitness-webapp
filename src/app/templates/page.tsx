@@ -103,6 +103,7 @@ export default function TemplatesPage() {
                 }
                 buttons={[
                     <Link
+                        key="new-template"
                         href="/templates/new"
                         className="flex items-center gap-2 bg-blue-500 text-white px-3 py-1.5 rounded-lg hover:bg-blue-600 transition-colors text-xs"
                     >

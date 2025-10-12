@@ -15,7 +15,6 @@ import {
     Trophy,
     Activity,
     Clock,
-    TrendingDown,
 } from "lucide-react";
 import Link from "next/link";
 import Header from "../../../components/header";
@@ -28,7 +27,6 @@ import {
     YAxis,
     CartesianGrid,
     Tooltip,
-    Legend,
     ResponsiveContainer,
 } from "recharts";
 import { subDays, subMonths, format, startOfDay } from "date-fns";
@@ -43,8 +41,12 @@ export default function ProgressPage() {
 
     const [loading, setLoading] = useState(true);
     const [period, setPeriod] = useState<TimePeriod>("1month");
-    const [workoutData, setWorkoutData] = useState<any[]>([]);
-    const [volumeData, setVolumeData] = useState<any[]>([]);
+    const [workoutData, setWorkoutData] = useState<
+        Array<{ date: string; treningi: number }>
+    >([]);
+    const [volumeData, setVolumeData] = useState<
+        Array<{ date: string; objętość: number }>
+    >([]);
     const [stats, setStats] = useState({
         totalWorkouts: 0,
         totalSets: 0,
@@ -344,7 +346,7 @@ export default function ProgressPage() {
             const workoutChartData = Object.entries(workoutsByDate).map(
                 ([date, count]) => ({
                     date: format(new Date(date), "dd MMM", { locale: pl }),
-                    treningi: count,
+                    treningi: count as number,
                 })
             );
 
