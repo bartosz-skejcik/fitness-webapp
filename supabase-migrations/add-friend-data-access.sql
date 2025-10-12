@@ -10,9 +10,9 @@ CREATE POLICY "Users can view their friends' workout sessions"
     ON workout_sessions FOR SELECT
     TO authenticated
     USING (
-        user_id = auth.uid() 
+        user_id = auth.uid()
         OR user_id IN (
-            SELECT CASE 
+            SELECT CASE
                 WHEN user_id = auth.uid() THEN friend_id
                 WHEN friend_id = auth.uid() THEN user_id
             END
@@ -90,7 +90,7 @@ CREATE POLICY "Users can view their friends' exercises"
     USING (
         user_id = auth.uid()
         OR user_id IN (
-            SELECT CASE 
+            SELECT CASE
                 WHEN user_id = auth.uid() THEN friend_id
                 WHEN friend_id = auth.uid() THEN user_id
             END
@@ -101,7 +101,7 @@ CREATE POLICY "Users can view their friends' exercises"
     );
 
 -- ============================================================================
--- Note: We don't add friend access to workout_templates and 
+-- Note: We don't add friend access to workout_templates and
 -- workout_template_exercises as these are personal workout plans
 -- and not needed for the comparison feature which only looks at
 -- completed workout sessions
@@ -112,7 +112,7 @@ CREATE POLICY "Users can view their friends' exercises"
 -- ============================================================================
 
 -- Check if policies were created successfully
--- SELECT schemaname, tablename, policyname 
--- FROM pg_policies 
+-- SELECT schemaname, tablename, policyname
+-- FROM pg_policies
 -- WHERE tablename IN ('workout_sessions', 'exercise_logs', 'set_logs', 'exercises')
 -- ORDER BY tablename, policyname;
