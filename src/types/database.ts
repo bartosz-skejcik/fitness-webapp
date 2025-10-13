@@ -80,3 +80,25 @@ export interface UserProfile {
     full_name?: string;
     avatar_url?: string;
 }
+
+export interface SharedWorkoutTemplate {
+    id: string;
+    workout_template_id: string;
+    shared_by_user_id: string;
+    is_public: boolean;
+    created_at: string;
+}
+
+export interface SharedTemplateWithDetails {
+    share_id: string;
+    workout_template_id: string;
+    shared_by_user_id: string;
+    is_public: boolean;
+    shared_at: string;
+    template_name: string;
+    workout_type: WorkoutType;
+    template_description?: string;
+    shared_by_name?: string;
+    shared_by_email?: string;
+    exercise_count: number;
+}

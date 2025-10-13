@@ -16,6 +16,7 @@ import {
     Calendar,
     Target,
     Flame,
+    Users,
 } from "lucide-react";
 import Link from "next/link";
 import Header from "../../../components/header";
@@ -54,6 +55,7 @@ export default function DashboardPage() {
                 await supabase
                     .from("workout_templates")
                     .select("*")
+                    .eq("user_id", user?.id)
                     .order("created_at", { ascending: false });
 
             if (templatesError) throw templatesError;
@@ -64,6 +66,7 @@ export default function DashboardPage() {
                 await supabase
                     .from("workout_sessions")
                     .select("*")
+                    .eq("user_id", user?.id)
                     .order("started_at", { ascending: false });
 
             if (allSessionsError) throw allSessionsError;
@@ -324,13 +327,22 @@ export default function DashboardPage() {
                         <h2 className="text-xs font-bold text-neutral-400 uppercase tracking-wider flex items-center gap-2">
                             Szablony treningów
                         </h2>
-                        <Link
-                            href="/templates/new"
-                            className="flex items-center gap-2 bg-blue-500 text-white px-3 py-1.5 rounded-lg hover:bg-blue-600 transition-colors text-xs"
-                        >
-                            <Plus className="w-4 h-4" />
-                            Nowy
-                        </Link>
+                        <div className="flex gap-2">
+                            <Link
+                                href="/templates/shared"
+                                className="flex items-center gap-2 bg-neutral-800 text-neutral-300 px-3 py-1.5 rounded-lg hover:bg-neutral-700 transition-colors text-xs"
+                            >
+                                <Users className="w-4 h-4" />
+                                Od znajomych
+                            </Link>
+                            <Link
+                                href="/templates/new"
+                                className="flex items-center gap-2 bg-blue-500 text-white px-3 py-1.5 rounded-lg hover:bg-blue-600 transition-colors text-xs"
+                            >
+                                <Plus className="w-4 h-4" />
+                                Nowy
+                            </Link>
+                        </div>
                     </div>
 
                     {templates.length === 0 ? (

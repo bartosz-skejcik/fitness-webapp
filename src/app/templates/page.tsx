@@ -5,7 +5,17 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { WorkoutTemplate, WorkoutType } from "@/types/database";
-import { ArrowLeft, Plus, Calendar, Loader2, Trash2 } from "lucide-react";
+import {
+    ArrowLeft,
+    Plus,
+    Calendar,
+    Loader2,
+    Trash2,
+    Users,
+    ClipboardList,
+    Play,
+    TrendingUp,
+} from "lucide-react";
 import Link from "next/link";
 import Header from "../../../components/header";
 
@@ -113,7 +123,29 @@ export default function TemplatesPage() {
                 ]}
             />
 
-            <main className="max-w-7xl mx-auto px-4 py-6">
+            <main className="max-w-7xl mx-auto px-4 py-6 pb-24">
+                {/* Link to shared templates */}
+                <Link
+                    href="/templates/shared"
+                    className="block mb-6 p-4 bg-gradient-to-r from-blue-500/10 to-orange-500/10 border border-blue-500/20 rounded-lg hover:border-blue-500/40 transition-colors"
+                >
+                    <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-full bg-blue-500/20 flex items-center justify-center">
+                            <Users className="w-5 h-5 text-blue-400" />
+                        </div>
+                        <div className="flex-1">
+                            <h3 className="text-sm font-semibold text-neutral-100 mb-1">
+                                Treningi od znajomych
+                            </h3>
+                            <p className="text-xs text-neutral-400">
+                                Przeglądaj i kopiuj treningi udostępnione przez
+                                znajomych
+                            </p>
+                        </div>
+                        <ArrowLeft className="w-5 h-5 text-neutral-400 rotate-180" />
+                    </div>
+                </Link>
+
                 {templates.length === 0 ? (
                     <div className="bg-neutral-900/50 rounded-lg p-12 text-center">
                         <Calendar className="w-12 h-12 text-neutral-600 mx-auto mb-3" />
@@ -192,6 +224,32 @@ export default function TemplatesPage() {
                     </div>
                 )}
             </main>
+
+            {/* Bottom Navigation */}
+            <div className="fixed bottom-0 left-0 right-0 bg-neutral-950 border-t border-neutral-800 px-4 py-3">
+                <div className="max-w-7xl mx-auto flex justify-around items-center gap-4">
+                    <Link
+                        href="/templates"
+                        className="flex flex-col items-center justify-center w-16 h-16 rounded-full bg-neutral-900 border border-neutral-800 text-blue-400 hover:bg-neutral-800 transition-colors"
+                    >
+                        <ClipboardList className="w-6 h-6" />
+                    </Link>
+
+                    <Link
+                        href="/workout/new"
+                        className="flex flex-col items-center justify-center w-16 h-16 rounded-full bg-orange-500 text-white hover:bg-orange-600 transition-colors"
+                    >
+                        <Play className="w-6 h-6" />
+                    </Link>
+
+                    <Link
+                        href="/progress"
+                        className="flex flex-col items-center justify-center w-16 h-16 rounded-full bg-neutral-900 border border-neutral-800 text-blue-400 hover:bg-neutral-800 transition-colors"
+                    >
+                        <TrendingUp className="w-6 h-6" />
+                    </Link>
+                </div>
+            </div>
         </div>
     );
 }

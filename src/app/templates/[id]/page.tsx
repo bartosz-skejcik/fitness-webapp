@@ -19,6 +19,9 @@ import {
     Play,
     Loader2,
     X,
+    Share2,
+    ClipboardList,
+    TrendingUp,
 } from "lucide-react";
 import Link from "next/link";
 import Header from "../../../../components/header";
@@ -40,6 +43,8 @@ export default function TemplateDetailPage() {
     const [loading, setLoading] = useState(true);
     const [editing, setEditing] = useState(false);
     const [saving, setSaving] = useState(false);
+    const [isShared, setIsShared] = useState(false);
+    const [sharingLoading, setSharingLoading] = useState(false);
 
     // Edit state
     const [editName, setEditName] = useState("");
@@ -61,8 +66,29 @@ export default function TemplateDetailPage() {
         if (user && templateId) {
             fetchTemplateData();
             fetchAllExercises();
+            checkIfShared();
         }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [user, templateId]);
+
+    async function checkIfShared() {
+        try {
+            const { data, error } = await supabase
+                .from("shared_workout_templates")
+                .select("id")
+                .eq("workout_template_id", templateId)
+                .single();
+
+            if (error && error.code !== "PGRST116") {
+                // PGRST116 is "not found" error, which is expected
+                throw error;
+            }
+
+            setIsShared(!!data);
+        } catch (error) {
+            console.error("Error checking if template is shared:", error);
+        }
+    }
 
     async function fetchTemplateData() {
         setLoading(true);
@@ -93,7 +119,29 @@ export default function TemplateDetailPage() {
                     .eq("workout_template_id", templateId)
                     .order("order_index");
 
-            if (exercisesError) throw exercisesError;
+            if (exercisesError) {
+                console.error(
+                    "Error fetching template exercises:",
+                    exercisesError
+                );
+                throw exercisesError;
+            }
+
+            console.log("Fetched template exercises:", exercisesData);
+            console.log("Number of exercises:", exercisesData?.length || 0);
+
+            // Check if exercises are properly joined
+            if (exercisesData && exercisesData.length > 0) {
+                exercisesData.forEach((ex, idx) => {
+                    console.log(`Exercise ${idx + 1}:`, {
+                        id: ex.id,
+                        exercise_id: ex.exercise_id,
+                        has_exercise_data: !!ex.exercise,
+                        exercise_name: ex.exercise?.name || "NO NAME",
+                    });
+                });
+            }
+
             const exercisesWithDetails = exercisesData as ExerciseWithDetails[];
             setExercises(exercisesWithDetails);
             setEditExercises(exercisesWithDetails);
@@ -287,6 +335,41 @@ export default function TemplateDetailPage() {
         router.push(`/workout/new?template=${templateId}`);
     }
 
+    async function toggleShare() {
+        if (!user || !template) return;
+
+        setSharingLoading(true);
+        try {
+            if (isShared) {
+                // Unshare the template
+                const { error } = await supabase
+                    .from("shared_workout_templates")
+                    .delete()
+                    .eq("workout_template_id", templateId);
+
+                if (error) throw error;
+                setIsShared(false);
+            } else {
+                // Share the template
+                const { error } = await supabase
+                    .from("shared_workout_templates")
+                    .insert({
+                        workout_template_id: templateId,
+                        shared_by_user_id: user.id,
+                        is_public: true,
+                    });
+
+                if (error) throw error;
+                setIsShared(true);
+            }
+        } catch (error) {
+            console.error("Error toggling share:", error);
+            alert("Błąd podczas zmiany udostępniania");
+        } finally {
+            setSharingLoading(false);
+        }
+    }
+
     const workoutTypeLabels: Record<WorkoutType, string> = {
         upper: "Góra",
         lower: "Dół",
@@ -354,6 +437,25 @@ export default function TemplateDetailPage() {
                     !editing
                         ? [
                               <button
+                                  key="share"
+                                  onClick={toggleShare}
+                                  disabled={sharingLoading}
+                                  className={`flex items-center gap-2 px-3 py-1.5 rounded-lg transition-colors text-xs ${
+                                      isShared
+                                          ? "bg-blue-500/20 text-blue-400 border border-blue-500/30 hover:bg-blue-500/30"
+                                          : "bg-neutral-800 text-neutral-300 hover:bg-neutral-700"
+                                  }`}
+                              >
+                                  {sharingLoading ? (
+                                      <Loader2 className="w-4 h-4 animate-spin" />
+                                  ) : (
+                                      <Share2 className="w-4 h-4" />
+                                  )}
+                                  <span className="hidden sm:inline">
+                                      {isShared ? "Udostępniony" : "Udostępnij"}
+                                  </span>
+                              </button>,
+                              <button
                                   key="edit"
                                   onClick={() => setEditing(true)}
                                   className="flex items-center gap-2 bg-neutral-800 text-neutral-300 px-3 py-1.5 rounded-lg hover:bg-neutral-700 transition-colors text-xs"
@@ -386,7 +488,7 @@ export default function TemplateDetailPage() {
                 }
             />
 
-            <main className="max-w-4xl mx-auto px-4 py-6">
+            <main className="max-w-4xl mx-auto px-4 py-6 pb-24">
                 {!editing ? (
                     // View Mode
                     <>
@@ -422,8 +524,16 @@ export default function TemplateDetailPage() {
                                             </div>
                                             <div className="flex-1">
                                                 <h3 className="font-medium text-neutral-100">
-                                                    {ex.exercise.name}
+                                                    {ex.exercise?.name ||
+                                                        `Exercise ID: ${ex.exercise_id}`}
                                                 </h3>
+                                                {!ex.exercise && (
+                                                    <p className="text-xs text-red-400 mt-1">
+                                                        Błąd: Nie można
+                                                        załadować danych
+                                                        ćwiczenia
+                                                    </p>
+                                                )}
                                             </div>
                                             <div className="text-sm text-neutral-400">
                                                 <span className="font-medium">
@@ -573,19 +683,24 @@ export default function TemplateDetailPage() {
                                                 ćwiczenie powyżej.
                                             </p>
                                         ) : (
-                                            allExercises.map((exercise) => (
-                                                <button
-                                                    key={exercise.id}
-                                                    onClick={() =>
-                                                        addExerciseToTemplate(
-                                                            exercise
-                                                        )
-                                                    }
-                                                    className="w-full text-left px-4 py-2 bg-neutral-900 border border-neutral-800 rounded-lg hover:border-blue-500/30 hover:bg-blue-500/100/10 transition-colors"
-                                                >
-                                                    {exercise.name}
-                                                </button>
-                                            ))
+                                            allExercises
+                                                .filter(
+                                                    (e) =>
+                                                        e.user_id === user?.id
+                                                )
+                                                .map((exercise) => (
+                                                    <button
+                                                        key={exercise.id}
+                                                        onClick={() =>
+                                                            addExerciseToTemplate(
+                                                                exercise
+                                                            )
+                                                        }
+                                                        className="w-full text-left px-4 py-2 bg-neutral-900 border border-neutral-800 rounded-lg hover:border-blue-500/30 hover:bg-blue-500/100/10 transition-colors"
+                                                    >
+                                                        {exercise.name}
+                                                    </button>
+                                                ))
                                         )}
                                     </div>
                                 </div>
@@ -700,6 +815,32 @@ export default function TemplateDetailPage() {
                     </>
                 )}
             </main>
+
+            {/* Bottom Navigation */}
+            <div className="fixed bottom-0 left-0 right-0 bg-neutral-950 border-t border-neutral-800 px-4 py-3">
+                <div className="max-w-7xl mx-auto flex justify-around items-center gap-4">
+                    <Link
+                        href="/templates"
+                        className="flex flex-col items-center justify-center w-16 h-16 rounded-full bg-neutral-900 border border-neutral-800 text-blue-400 hover:bg-neutral-800 transition-colors"
+                    >
+                        <ClipboardList className="w-6 h-6" />
+                    </Link>
+
+                    <Link
+                        href="/workout/new"
+                        className="flex flex-col items-center justify-center w-16 h-16 rounded-full bg-orange-500 text-white hover:bg-orange-600 transition-colors"
+                    >
+                        <Play className="w-6 h-6" />
+                    </Link>
+
+                    <Link
+                        href="/progress"
+                        className="flex flex-col items-center justify-center w-16 h-16 rounded-full bg-neutral-900 border border-neutral-800 text-blue-400 hover:bg-neutral-800 transition-colors"
+                    >
+                        <TrendingUp className="w-6 h-6" />
+                    </Link>
+                </div>
+            </div>
         </div>
     );
 }
