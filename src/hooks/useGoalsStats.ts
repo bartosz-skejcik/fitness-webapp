@@ -110,9 +110,7 @@ export function useGoalsStats(userId: string | undefined) {
                 today.setHours(0, 0, 0, 0);
 
                 for (let i = 0; i < sortedSessions.length; i++) {
-                    const sessionDate = new Date(
-                        sortedSessions[i].started_at
-                    );
+                    const sessionDate = new Date(sortedSessions[i].started_at);
                     sessionDate.setHours(0, 0, 0, 0);
 
                     const daysDiff = Math.floor(

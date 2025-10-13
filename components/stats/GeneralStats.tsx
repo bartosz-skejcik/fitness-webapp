@@ -199,9 +199,7 @@ export default function GeneralStats({ userId }: GeneralStatsProps) {
                         </h3>
                     </div>
                     {stats.mostFrequentDays.length === 0 ? (
-                        <p className="text-neutral-500 text-xs">
-                            Brak danych
-                        </p>
+                        <p className="text-neutral-500 text-xs">Brak danych</p>
                     ) : (
                         <div className="space-y-3">
                             {stats.mostFrequentDays.map((item, index) => (
@@ -249,9 +247,7 @@ export default function GeneralStats({ userId }: GeneralStatsProps) {
                         </h3>
                     </div>
                     {stats.mostFrequentTimes.length === 0 ? (
-                        <p className="text-neutral-500 text-xs">
-                            Brak danych
-                        </p>
+                        <p className="text-neutral-500 text-xs">Brak danych</p>
                     ) : (
                         <div className="space-y-3">
                             {stats.mostFrequentTimes.map((item, index) => (

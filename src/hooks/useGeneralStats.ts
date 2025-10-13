@@ -123,7 +123,8 @@ export function useGeneralStats(userId: string | undefined) {
                 ];
 
                 completedSessions.forEach((session) => {
-                    const day = daysOfWeek[new Date(session.started_at).getDay()];
+                    const day =
+                        daysOfWeek[new Date(session.started_at).getDay()];
                     dayCount[day] = (dayCount[day] || 0) + 1;
                 });
 

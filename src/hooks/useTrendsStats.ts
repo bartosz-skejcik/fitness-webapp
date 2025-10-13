@@ -78,7 +78,9 @@ export function useTrendsStats(userId: string | undefined) {
 
                 const { data: exerciseLogs } = await supabase
                     .from("exercise_logs")
-                    .select("id, exercise_id, workout_session_id, exercises(name)")
+                    .select(
+                        "id, exercise_id, workout_session_id, exercises(name)"
+                    )
                     .in("workout_session_id", sessionIds);
 
                 const exerciseLogIds = (exerciseLogs || []).map((l) => l.id);
@@ -228,9 +230,7 @@ export function useTrendsStats(userId: string | undefined) {
 
                 const heatmapMap = new Map<string, number>();
                 sessions
-                    .filter(
-                        (s) => new Date(s.started_at) >= ninetyDaysAgo
-                    )
+                    .filter((s) => new Date(s.started_at) >= ninetyDaysAgo)
                     .forEach((session) => {
                         const date = new Date(session.started_at)
                             .toISOString()

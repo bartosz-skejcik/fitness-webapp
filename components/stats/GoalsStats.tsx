@@ -58,7 +58,9 @@ export default function GoalsStats({ userId }: GoalsStatsProps) {
                                 key={badge.id}
                                 className="bg-neutral-900 border border-orange-500/30 rounded-lg p-4 text-center"
                             >
-                                <div className="text-4xl mb-2">{badge.icon}</div>
+                                <div className="text-4xl mb-2">
+                                    {badge.icon}
+                                </div>
                                 <h4 className="text-sm font-semibold text-neutral-100 mb-1">
                                     {badge.title}
                                 </h4>

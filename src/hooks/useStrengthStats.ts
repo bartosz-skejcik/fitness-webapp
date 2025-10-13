@@ -197,8 +197,7 @@ export function useStrengthStats(userId: string | undefined) {
                 const personalRecords: ExerciseRecord[] = [];
                 Array.from(exerciseMap.entries()).forEach(
                     ([exerciseId, data]) => {
-                        const oneRM =
-                            data.maxWeight * (1 + data.maxReps / 30);
+                        const oneRM = data.maxWeight * (1 + data.maxReps / 30);
                         data.estimatedOneRM = Math.round(oneRM);
 
                         personalRecords.push({
@@ -258,7 +257,9 @@ export function useStrengthStats(userId: string | undefined) {
                                 : 0,
                         avgSets:
                             exerciseLogs && exerciseLogs.length > 0
-                                ? Math.round(totalSetsCount / exerciseLogs.length)
+                                ? Math.round(
+                                      totalSetsCount / exerciseLogs.length
+                                  )
                                 : 0,
                     },
                     mostPerformedExercises: mostPerformed,
