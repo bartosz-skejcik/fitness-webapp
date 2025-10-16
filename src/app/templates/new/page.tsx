@@ -5,6 +5,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { Exercise, WorkoutType } from "@/types/database";
+import { TargetBodyPart } from "@/types/database";
 import { ArrowLeft, Plus, Trash2, Loader2, Save } from "lucide-react";
 import Link from "next/link";
 import Header from "../../../../components/header";
@@ -31,6 +32,9 @@ export default function NewTemplatePage() {
     );
     const [showExercisePicker, setShowExercisePicker] = useState(false);
     const [newExerciseName, setNewExerciseName] = useState("");
+    const [newExerciseTarget, setNewExerciseTarget] = useState<
+        TargetBodyPart | ""
+    >("");
     const [searchQuery, setSearchQuery] = useState("");
     const [loading, setLoading] = useState(false);
     const [saving, setSaving] = useState(false);
@@ -138,6 +142,7 @@ export default function NewTemplatePage() {
                 .insert({
                     name: newExerciseName,
                     muscle_group: workoutType,
+                    target_body_part: newExerciseTarget || null,
                     user_id: user.id,
                 })
                 .select()
@@ -364,6 +369,41 @@ export default function NewTemplatePage() {
                                             createNewExercise()
                                         }
                                     />
+                                    <select
+                                        value={newExerciseTarget}
+                                        onChange={(e) =>
+                                            setNewExerciseTarget(
+                                                e.target.value as TargetBodyPart
+                                            )
+                                        }
+                                        className="px-2 py-2 bg-neutral-900 border border-neutral-700 text-neutral-100 rounded-lg text-xs mr-2"
+                                    >
+                                        <option value="">Część ciała</option>
+                                        <option value="quads">Quads</option>
+                                        <option value="hamstrings">
+                                            Hamstrings
+                                        </option>
+                                        <option value="glutes">Glutes</option>
+                                        <option value="chest">Chest</option>
+                                        <option value="back">Back</option>
+                                        <option value="biceps">Biceps</option>
+                                        <option value="triceps">Triceps</option>
+                                        <option value="shoulders">
+                                            Shoulders
+                                        </option>
+                                        <option value="calves">Calves</option>
+                                        <option value="core">Core</option>
+                                        <option value="forearms">
+                                            Forearms
+                                        </option>
+                                        <option value="neck">Neck</option>
+                                        <option value="adductors">
+                                            Adductors
+                                        </option>
+                                        <option value="abductors">
+                                            Abductors
+                                        </option>
+                                    </select>
                                     <button
                                         onClick={createNewExercise}
                                         className="bg-orange-500 text-white px-3 py-2 rounded-lg hover:bg-orange-600 transition-colors text-xs whitespace-nowrap"
@@ -429,6 +469,13 @@ export default function NewTemplatePage() {
                                                                         {
                                                                             exercise.name
                                                                         }
+                                                                        {exercise.target_body_part && (
+                                                                            <span className="ml-2 text-xs text-neutral-400">
+                                                                                {
+                                                                                    exercise.target_body_part
+                                                                                }
+                                                                            </span>
+                                                                        )}
                                                                         {isSelected && (
                                                                             <span className="ml-2 text-neutral-600">
                                                                                 ✓
@@ -510,6 +557,13 @@ export default function NewTemplatePage() {
                                                                     {
                                                                         exercise.name
                                                                     }
+                                                                    {exercise.target_body_part && (
+                                                                        <span className="ml-2 text-xs text-neutral-400">
+                                                                            {
+                                                                                exercise.target_body_part
+                                                                            }
+                                                                        </span>
+                                                                    )}
                                                                     {isSelected && (
                                                                         <span className="ml-2 text-neutral-600">
                                                                             ✓

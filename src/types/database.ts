@@ -1,11 +1,28 @@
 export type WorkoutType = "upper" | "lower" | "legs" | "cardio";
 
+export type TargetBodyPart =
+    | "quads"
+    | "hamstrings"
+    | "glutes"
+    | "chest"
+    | "back"
+    | "biceps"
+    | "triceps"
+    | "shoulders"
+    | "calves"
+    | "core"
+    | "forearms"
+    | "neck"
+    | "adductors"
+    | "abductors";
+
 export interface Exercise {
     id: string;
     user_id: string;
     name: string;
     description?: string;
     muscle_group?: WorkoutType;
+    target_body_part?: TargetBodyPart | null;
     created_at: string;
     updated_at: string;
 }

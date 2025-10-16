@@ -10,6 +10,7 @@ import {
     Exercise,
     WorkoutType,
 } from "@/types/database";
+import { TargetBodyPart } from "@/types/database";
 import {
     ArrowLeft,
     Edit2,
@@ -55,6 +56,9 @@ export default function TemplateDetailPage() {
     );
     const [showExercisePicker, setShowExercisePicker] = useState(false);
     const [newExerciseName, setNewExerciseName] = useState("");
+    const [newExerciseTarget, setNewExerciseTarget] = useState<
+        TargetBodyPart | ""
+    >("");
 
     useEffect(() => {
         if (!user) {
@@ -175,6 +179,7 @@ export default function TemplateDetailPage() {
                 .insert({
                     name: newExerciseName,
                     muscle_group: editType,
+                    target_body_part: newExerciseTarget || null,
                     user_id: user.id,
                 })
                 .select()
@@ -527,6 +532,15 @@ export default function TemplateDetailPage() {
                                                     {ex.exercise?.name ||
                                                         `Exercise ID: ${ex.exercise_id}`}
                                                 </h3>
+                                                {ex.exercise
+                                                    ?.target_body_part && (
+                                                    <p className="text-xs text-neutral-400 mt-1">
+                                                        {
+                                                            ex.exercise
+                                                                .target_body_part
+                                                        }
+                                                    </p>
+                                                )}
                                                 {!ex.exercise && (
                                                     <p className="text-xs text-red-400 mt-1">
                                                         Błąd: Nie można
@@ -667,6 +681,62 @@ export default function TemplateDetailPage() {
                                                     createNewExercise()
                                                 }
                                             />
+                                            <select
+                                                value={newExerciseTarget}
+                                                onChange={(e) =>
+                                                    setNewExerciseTarget(
+                                                        e.target
+                                                            .value as TargetBodyPart
+                                                    )
+                                                }
+                                                className="px-3 py-2 bg-neutral-900 border border-neutral-700 text-neutral-100 rounded-lg text-sm mr-2"
+                                            >
+                                                <option value="">
+                                                    Część ciała
+                                                </option>
+                                                <option value="quads">
+                                                    Quads
+                                                </option>
+                                                <option value="hamstrings">
+                                                    Hamstrings
+                                                </option>
+                                                <option value="glutes">
+                                                    Glutes
+                                                </option>
+                                                <option value="chest">
+                                                    Chest
+                                                </option>
+                                                <option value="back">
+                                                    Back
+                                                </option>
+                                                <option value="biceps">
+                                                    Biceps
+                                                </option>
+                                                <option value="triceps">
+                                                    Triceps
+                                                </option>
+                                                <option value="shoulders">
+                                                    Shoulders
+                                                </option>
+                                                <option value="calves">
+                                                    Calves
+                                                </option>
+                                                <option value="core">
+                                                    Core
+                                                </option>
+                                                <option value="forearms">
+                                                    Forearms
+                                                </option>
+                                                <option value="neck">
+                                                    Neck
+                                                </option>
+                                                <option value="adductors">
+                                                    Adductors
+                                                </option>
+                                                <option value="abductors">
+                                                    Abductors
+                                                </option>
+                                            </select>
                                             <button
                                                 onClick={createNewExercise}
                                                 className="bg-orange-500 text-white px-4 py-2 rounded-lg hover:bg-orange-600 transition-colors"
@@ -751,6 +821,15 @@ export default function TemplateDetailPage() {
                                                 <p className="font-medium text-neutral-100">
                                                     {exercise.exercise.name}
                                                 </p>
+                                                {exercise.exercise
+                                                    .target_body_part && (
+                                                    <p className="text-xs text-neutral-400 mt-1">
+                                                        {
+                                                            exercise.exercise
+                                                                .target_body_part
+                                                        }
+                                                    </p>
+                                                )}
                                             </div>
 
                                             <div className="flex items-center gap-2">
