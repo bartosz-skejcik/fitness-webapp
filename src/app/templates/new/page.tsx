@@ -379,29 +379,31 @@ export default function NewTemplatePage() {
                                         className="px-2 py-2 bg-neutral-900 border border-neutral-700 text-neutral-100 rounded-lg text-xs mr-2"
                                     >
                                         <option value="">Część ciała</option>
-                                        <option value="quads">Quads</option>
-                                        <option value="hamstrings">
-                                            Hamstrings
+                                        <option value="quads">
+                                            Czworogłowe
                                         </option>
-                                        <option value="glutes">Glutes</option>
-                                        <option value="chest">Chest</option>
-                                        <option value="back">Back</option>
+                                        <option value="hamstrings">
+                                            Ścięgna podkolanowe
+                                        </option>
+                                        <option value="glutes">Pośladki</option>
+                                        <option value="chest">
+                                            Klatka piersiowa
+                                        </option>
+                                        <option value="back">Plecy</option>
                                         <option value="biceps">Biceps</option>
                                         <option value="triceps">Triceps</option>
-                                        <option value="shoulders">
-                                            Shoulders
-                                        </option>
-                                        <option value="calves">Calves</option>
+                                        <option value="shoulders">Barki</option>
+                                        <option value="calves">Łydki</option>
                                         <option value="core">Core</option>
                                         <option value="forearms">
-                                            Forearms
+                                            Przedramiona
                                         </option>
-                                        <option value="neck">Neck</option>
+                                        <option value="neck">Szyja</option>
                                         <option value="adductors">
-                                            Adductors
+                                            Przywodziciele
                                         </option>
                                         <option value="abductors">
-                                            Abductors
+                                            Odwodziciele
                                         </option>
                                     </select>
                                     <button

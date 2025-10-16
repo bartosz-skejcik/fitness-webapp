@@ -695,19 +695,19 @@ export default function TemplateDetailPage() {
                                                     Część ciała
                                                 </option>
                                                 <option value="quads">
-                                                    Quads
+                                                    Czworogłowe
                                                 </option>
                                                 <option value="hamstrings">
-                                                    Hamstrings
+                                                    Ścięgna podkolanowe
                                                 </option>
                                                 <option value="glutes">
-                                                    Glutes
+                                                    Pośladki
                                                 </option>
                                                 <option value="chest">
-                                                    Chest
+                                                    Klatka piersiowa
                                                 </option>
                                                 <option value="back">
-                                                    Back
+                                                    Plecy
                                                 </option>
                                                 <option value="biceps">
                                                     Biceps
@@ -716,25 +716,25 @@ export default function TemplateDetailPage() {
                                                     Triceps
                                                 </option>
                                                 <option value="shoulders">
-                                                    Shoulders
+                                                    Barki
                                                 </option>
                                                 <option value="calves">
-                                                    Calves
+                                                    Łydki
                                                 </option>
                                                 <option value="core">
                                                     Core
                                                 </option>
                                                 <option value="forearms">
-                                                    Forearms
+                                                    Przedramiona
                                                 </option>
                                                 <option value="neck">
-                                                    Neck
+                                                    Szyja
                                                 </option>
                                                 <option value="adductors">
-                                                    Adductors
+                                                    Przywodziciele
                                                 </option>
                                                 <option value="abductors">
-                                                    Abductors
+                                                    Odwodziciele
                                                 </option>
                                             </select>
                                             <button
