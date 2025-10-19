@@ -121,3 +121,19 @@ export interface SharedTemplateWithDetails {
     shared_by_email?: string;
     exercise_count: number;
 }
+
+export type GoalType = "volume" | "frequency" | "specific_exercises";
+export type GoalTimeframe = "weekly" | "monthly";
+
+export interface BodyPartGoal {
+    id: string;
+    user_id: string;
+    body_part: TargetBodyPart;
+    goal_type: GoalType;
+    target_value?: number;
+    target_exercises?: string[];
+    timeframe: GoalTimeframe;
+    created_at: string;
+    updated_at: string;
+    is_active: boolean;
+}

@@ -5,9 +5,10 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { WorkoutTemplate, WorkoutType, Exercise } from "@/types/database";
-import { ArrowLeft, Play, Loader2 } from "lucide-react";
+import { ArrowLeft, Play, Loader2, Lightbulb, Plus } from "lucide-react";
 import Link from "next/link";
 import Header from "../../../../components/header";
+import { useExerciseRecommendations } from "@/hooks/useExerciseRecommendations";
 
 export default function NewWorkoutPage() {
     const { user } = useAuth();
@@ -24,6 +25,7 @@ export default function NewWorkoutPage() {
     const [workoutType, setWorkoutType] = useState<WorkoutType>("upper");
     const [selectedExercises, setSelectedExercises] = useState<string[]>([]);
     const [starting, setStarting] = useState(false);
+    const { recommendations } = useExerciseRecommendations();
 
     useEffect(() => {
         if (user) {
@@ -203,6 +205,92 @@ export default function NewWorkoutPage() {
             />
 
             <main className="max-w-4xl mx-auto px-4 py-6">
+                {/* Exercise Recommendations */}
+                {recommendations.length > 0 && (
+                    <div className="bg-gradient-to-br from-yellow-500/10 to-yellow-600/5 border border-yellow-500/20 rounded-lg p-4 mb-6">
+                        <div className="flex items-center gap-2 mb-3">
+                            <Lightbulb className="w-5 h-5 text-yellow-400" />
+                            <h2 className="text-sm font-bold text-yellow-400 uppercase">
+                                Rekomendacje ćwiczeń
+                            </h2>
+                        </div>
+                        <p className="text-xs text-yellow-300 mb-4">
+                            Na podstawie analizy Twoich treningów, zalecamy
+                            skupić się na tych partiach:
+                        </p>
+                        <div className="space-y-3">
+                            {recommendations.map((rec, idx) => (
+                                <div
+                                    key={idx}
+                                    className={`bg-neutral-900/50 border rounded-lg p-3 ${
+                                        rec.priority === "high"
+                                            ? "border-red-500/30"
+                                            : rec.priority === "moderate"
+                                            ? "border-yellow-500/30"
+                                            : "border-blue-500/30"
+                                    }`}
+                                >
+                                    <div className="flex items-start justify-between mb-2">
+                                        <div>
+                                            <h3 className="font-semibold text-neutral-100 text-sm">
+                                                {rec.bodyPartLabel}
+                                            </h3>
+                                            <p className="text-xs text-neutral-400">
+                                                {rec.reason}
+                                            </p>
+                                        </div>
+                                        <span
+                                            className={`text-xs px-2 py-0.5 rounded ${
+                                                rec.priority === "high"
+                                                    ? "bg-red-500/20 text-red-400 border border-red-500/30"
+                                                    : rec.priority ===
+                                                      "moderate"
+                                                    ? "bg-yellow-500/20 text-yellow-400 border border-yellow-500/30"
+                                                    : "bg-blue-500/20 text-blue-400 border border-blue-500/30"
+                                            }`}
+                                        >
+                                            {rec.priority === "high"
+                                                ? "Wysoki priorytet"
+                                                : rec.priority === "moderate"
+                                                ? "Średni"
+                                                : "Niski"}
+                                        </span>
+                                    </div>
+                                    <div className="flex flex-wrap gap-2 mt-2">
+                                        {rec.exercises.slice(0, 3).map((ex) => (
+                                            <button
+                                                key={ex.id}
+                                                onClick={() => {
+                                                    if (
+                                                        !selectedExercises.includes(
+                                                            ex.id
+                                                        )
+                                                    ) {
+                                                        setSelectedExercises([
+                                                            ...selectedExercises,
+                                                            ex.id,
+                                                        ]);
+                                                    }
+                                                }}
+                                                className="text-xs px-2 py-1 bg-neutral-800 hover:bg-neutral-700 text-neutral-300 rounded flex items-center gap-1 transition-colors"
+                                            >
+                                                <Plus className="w-3 h-3" />
+                                                {ex.name}
+                                            </button>
+                                        ))}
+                                        {rec.exercises.length > 3 && (
+                                            <span className="text-xs text-neutral-500 py-1">
+                                                +{rec.exercises.length - 3}{" "}
+                                                więcej
+                                            </span>
+                                        )}
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                )}
+
                 <div className="bg-neutral-900 rounded-lg  p-4 mb-6">
                     <h2 className="text-sm font-semibold text-neutral-100 mb-4">
                         Wybierz szablon treningu

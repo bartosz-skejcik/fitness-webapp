@@ -17,10 +17,14 @@ import {
     Target,
     Flame,
     Users,
+    AlertTriangle,
+    Award,
+    Activity,
 } from "lucide-react";
 import Link from "next/link";
 import Header from "../../../components/header";
 import UserMenu from "../../../components/user-menu";
+import { useDashboardInsights } from "@/hooks/useDashboardInsights";
 
 export default function DashboardPage() {
     const { user, loading: authLoading } = useAuth();
@@ -34,6 +38,7 @@ export default function DashboardPage() {
         totalVolume: 0,
         currentStreak: 0,
     });
+    const { insights } = useDashboardInsights();
     const supabase = createClient();
 
     useEffect(() => {
@@ -187,6 +192,98 @@ export default function DashboardPage() {
             />
 
             <main className="max-w-7xl mx-auto px-4 py-6 pb-24">
+                {/* Body Part Insights */}
+                {insights.length > 0 && (
+                    <div className="mb-6">
+                        <h2 className="text-xs font-bold text-neutral-400 uppercase tracking-wider mb-3">
+                            Analiza partii mięśniowych
+                        </h2>
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
+                            {insights.map((insight, idx) => {
+                                const getInsightColor = () => {
+                                    if (insight.severity === "positive") {
+                                        return "from-green-500/20 to-green-600/10 border-green-500/30";
+                                    }
+                                    switch (insight.severity) {
+                                        case "high":
+                                            return "from-red-500/20 to-red-600/10 border-red-500/30";
+                                        case "moderate":
+                                            return "from-yellow-500/20 to-yellow-600/10 border-yellow-500/30";
+                                        default:
+                                            return "from-blue-500/20 to-blue-600/10 border-blue-500/30";
+                                    }
+                                };
+
+                                const getInsightIcon = () => {
+                                    switch (insight.type) {
+                                        case "imbalance":
+                                            return (
+                                                <AlertTriangle className="w-5 h-5" />
+                                            );
+                                        case "undertrained":
+                                            return (
+                                                <Activity className="w-5 h-5" />
+                                            );
+                                        case "pr":
+                                            return (
+                                                <Award className="w-5 h-5" />
+                                            );
+                                        case "performing":
+                                            return (
+                                                <TrendingUp className="w-5 h-5" />
+                                            );
+                                    }
+                                };
+
+                                const getInsightTextColor = () => {
+                                    if (insight.severity === "positive") {
+                                        return "text-green-400";
+                                    }
+                                    switch (insight.severity) {
+                                        case "high":
+                                            return "text-red-400";
+                                        case "moderate":
+                                            return "text-yellow-400";
+                                        default:
+                                            return "text-blue-400";
+                                    }
+                                };
+
+                                return (
+                                    <Link
+                                        key={idx}
+                                        href="/progress?tab=bodyparts"
+                                        className={`bg-gradient-to-br ${getInsightColor()} border-2 rounded-lg p-4 hover:scale-[1.02] transition-transform`}
+                                    >
+                                        <div className="flex items-start justify-between mb-2">
+                                            <div
+                                                className={`p-2 bg-black/20 rounded-lg ${getInsightTextColor()}`}
+                                            >
+                                                {getInsightIcon()}
+                                            </div>
+                                            <span
+                                                className={`text-xl font-bold ${getInsightTextColor()}`}
+                                            >
+                                                {insight.value}
+                                            </span>
+                                        </div>
+                                        <h3
+                                            className={`font-bold text-sm mb-1 ${getInsightTextColor()}`}
+                                        >
+                                            {insight.title}
+                                        </h3>
+                                        <p
+                                            className={`text-xs opacity-90 ${getInsightTextColor()}`}
+                                        >
+                                            {insight.description}
+                                        </p>
+                                    </Link>
+                                );
+                            })}
+                        </div>
+                    </div>
+                )}
+
                 {/* Stats Tiles */}
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
                     <div className="bg-neutral-900 border border-neutral-800 rounded-lg p-4">

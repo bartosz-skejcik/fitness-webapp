@@ -1,5 +1,13 @@
-import { Trophy, Award, TrendingUp, Loader2, CheckCircle2 } from "lucide-react";
+import {
+    Trophy,
+    Award,
+    TrendingUp,
+    Loader2,
+    CheckCircle2,
+    Target,
+} from "lucide-react";
 import { useGoalsStats, Badge } from "@/hooks/useGoalsStats";
+import BodyPartGoalsManager from "./BodyPartGoalsManager";
 
 interface GoalsStatsProps {
     userId: string | undefined;
@@ -90,6 +98,19 @@ export default function GoalsStats({ userId }: GoalsStatsProps) {
 
     return (
         <div className="space-y-6">
+            {/* Body Part Goals Manager */}
+            <BodyPartGoalsManager />
+
+            {/* Divider */}
+            <div className="border-t border-neutral-800 pt-6">
+                <div className="flex items-center gap-2 mb-6">
+                    <Trophy className="w-5 h-5 text-orange-500" />
+                    <h2 className="text-xl font-bold text-neutral-100">
+                        Odznaki i osiągnięcia
+                    </h2>
+                </div>
+            </div>
+
             {/* Overall Progress */}
             <div className="bg-gradient-to-br from-orange-500/10 to-orange-500/5 border border-orange-500/20 rounded-lg p-6">
                 <div className="flex items-center justify-between">

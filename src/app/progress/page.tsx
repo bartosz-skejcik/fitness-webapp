@@ -1,9 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { useAuth } from "@/contexts/AuthContext";
-import { useRouter } from "next/navigation";
-import { useEffect } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import {
     TrendingUp,
     Dumbbell,
@@ -15,6 +14,8 @@ import {
     Loader2,
     Activity,
     Scale,
+    AlertTriangle,
+    Calendar,
 } from "lucide-react";
 import Link from "next/link";
 import Header from "../../../components/header";
@@ -24,6 +25,8 @@ import TrendsStats from "../../../components/stats/TrendsStats";
 import GoalsStats from "../../../components/stats/GoalsStats";
 import BodyPartAnalysis from "../../../components/stats/BodyPartAnalysis";
 import SymmetryStats from "../../../components/stats/SymmetryStats";
+import InjuryRiskStats from "../../../components/stats/InjuryRiskStats";
+import PeriodizationStats from "../../../components/stats/PeriodizationStats";
 
 type TabType =
     | "general"
@@ -31,18 +34,43 @@ type TabType =
     | "trends"
     | "goals"
     | "bodyparts"
-    | "symmetry";
+    | "symmetry"
+    | "injury"
+    | "periodization";
 
-export default function ProgressPage() {
+function ProgressContent() {
     const { user, loading: authLoading } = useAuth();
     const router = useRouter();
+    const searchParams = useSearchParams();
     const [activeTab, setActiveTab] = useState<TabType>("general");
+
+    // Set initial tab from URL parameter
+    useEffect(() => {
+        const tabParam = searchParams.get("tab");
+        if (tabParam && isValidTab(tabParam)) {
+            setActiveTab(tabParam as TabType);
+        }
+    }, [searchParams]);
 
     useEffect(() => {
         if (!authLoading && !user) {
             router.push("/login");
         }
     }, [user, authLoading, router]);
+
+    // Helper function to validate tab parameter
+    function isValidTab(tab: string): tab is TabType {
+        return [
+            "general",
+            "strength",
+            "trends",
+            "goals",
+            "bodyparts",
+            "symmetry",
+            "injury",
+            "periodization",
+        ].includes(tab);
+    }
 
     if (authLoading) {
         return (
@@ -86,6 +114,16 @@ export default function ProgressPage() {
             id: "symmetry",
             label: "Symetria",
             icon: <Scale className="w-4 h-4" />,
+        },
+        {
+            id: "injury",
+            label: "Ryzyko Kontuzji",
+            icon: <AlertTriangle className="w-4 h-4" />,
+        },
+        {
+            id: "periodization",
+            label: "Periodyzacja",
+            icon: <Calendar className="w-4 h-4" />,
         },
     ];
 
@@ -144,6 +182,8 @@ export default function ProgressPage() {
                         <BodyPartAnalysis userId={user?.id} />
                     )}
                     {activeTab === "symmetry" && <SymmetryStats />}
+                    {activeTab === "injury" && <InjuryRiskStats />}
+                    {activeTab === "periodization" && <PeriodizationStats />}
                 </div>
             </main>
 
@@ -173,5 +213,19 @@ export default function ProgressPage() {
                 </div>
             </div>
         </div>
+    );
+}
+
+export default function ProgressPage() {
+    return (
+        <Suspense
+            fallback={
+                <div className="min-h-screen flex items-center justify-center bg-neutral-950">
+                    <Loader2 className="w-8 h-8 animate-spin text-orange-500" />
+                </div>
+            }
+        >
+            <ProgressContent />
+        </Suspense>
     );
 }
