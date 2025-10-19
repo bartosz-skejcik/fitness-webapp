@@ -14,6 +14,7 @@ import {
     Play,
     Loader2,
     Activity,
+    Scale,
 } from "lucide-react";
 import Link from "next/link";
 import Header from "../../../components/header";
@@ -22,8 +23,15 @@ import StrengthStats from "../../../components/stats/StrengthStats";
 import TrendsStats from "../../../components/stats/TrendsStats";
 import GoalsStats from "../../../components/stats/GoalsStats";
 import BodyPartAnalysis from "../../../components/stats/BodyPartAnalysis";
+import SymmetryStats from "../../../components/stats/SymmetryStats";
 
-type TabType = "general" | "strength" | "trends" | "goals" | "bodyparts";
+type TabType =
+    | "general"
+    | "strength"
+    | "trends"
+    | "goals"
+    | "bodyparts"
+    | "symmetry";
 
 export default function ProgressPage() {
     const { user, loading: authLoading } = useAuth();
@@ -73,6 +81,11 @@ export default function ProgressPage() {
             id: "bodyparts",
             label: "Analiza Partii",
             icon: <Activity className="w-4 h-4" />,
+        },
+        {
+            id: "symmetry",
+            label: "Symetria",
+            icon: <Scale className="w-4 h-4" />,
         },
     ];
 
@@ -130,6 +143,7 @@ export default function ProgressPage() {
                     {activeTab === "bodyparts" && (
                         <BodyPartAnalysis userId={user?.id} />
                     )}
+                    {activeTab === "symmetry" && <SymmetryStats />}
                 </div>
             </main>
 

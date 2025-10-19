@@ -35,6 +35,8 @@ export default function NewTemplatePage() {
     const [newExerciseTarget, setNewExerciseTarget] = useState<
         TargetBodyPart | ""
     >("");
+    const [newExerciseIsUnilateral, setNewExerciseIsUnilateral] =
+        useState(false);
     const [searchQuery, setSearchQuery] = useState("");
     const [loading, setLoading] = useState(false);
     const [saving, setSaving] = useState(false);
@@ -143,6 +145,7 @@ export default function NewTemplatePage() {
                     name: newExerciseName,
                     muscle_group: workoutType,
                     target_body_part: newExerciseTarget || null,
+                    is_unilateral: newExerciseIsUnilateral,
                     user_id: user.id,
                 })
                 .select()
@@ -153,6 +156,8 @@ export default function NewTemplatePage() {
             setAllExercises([...allExercises, data]);
             addExercise(data);
             setNewExerciseName("");
+            setNewExerciseTarget("");
+            setNewExerciseIsUnilateral(false);
         } catch (error) {
             console.error("Error creating exercise:", error);
             alert("Błąd podczas tworzenia ćwiczenia");
@@ -406,6 +411,22 @@ export default function NewTemplatePage() {
                                         Odwodziciele
                                     </option>
                                 </select>
+                                <label className="flex items-center gap-2 text-xs text-neutral-300 cursor-pointer">
+                                    <input
+                                        type="checkbox"
+                                        checked={newExerciseIsUnilateral}
+                                        onChange={(e) =>
+                                            setNewExerciseIsUnilateral(
+                                                e.target.checked
+                                            )
+                                        }
+                                        className="w-4 h-4 rounded border-neutral-700 bg-neutral-900 text-orange-500 focus:ring-2 focus:ring-orange-500"
+                                    />
+                                    <span>
+                                        Ćwiczenie jednostronne (jedna strona
+                                        naraz)
+                                    </span>
+                                </label>
                                 <button
                                     onClick={createNewExercise}
                                     className="w-full bg-orange-500 text-white px-3 py-2 rounded-lg hover:bg-orange-600 transition-colors text-xs"

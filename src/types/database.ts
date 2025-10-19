@@ -23,6 +23,7 @@ export interface Exercise {
     description?: string;
     muscle_group?: WorkoutType;
     target_body_part?: TargetBodyPart | null;
+    is_unilateral?: boolean;
     created_at: string;
     updated_at: string;
 }
@@ -77,6 +78,7 @@ export interface SetLog {
     weight?: number;
     rir?: number;
     completed: boolean;
+    side?: "left" | "right" | null;
     created_at: string;
 }
 
