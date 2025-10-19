@@ -22,10 +22,19 @@ export interface Exercise {
     name: string;
     description?: string;
     muscle_group?: WorkoutType;
-    target_body_part?: TargetBodyPart | null;
+    target_body_part?: TargetBodyPart | null; // Deprecated: use body_parts array instead
     is_unilateral?: boolean;
     created_at: string;
     updated_at: string;
+    body_parts?: ExerciseBodyPart[]; // New: multiple body parts support
+}
+
+export interface ExerciseBodyPart {
+    id: string;
+    exercise_id: string;
+    body_part: TargetBodyPart;
+    is_primary: boolean;
+    created_at: string;
 }
 
 export interface WorkoutTemplate {

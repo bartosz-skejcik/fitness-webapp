@@ -13,6 +13,7 @@ import {
     Save,
     X,
     Search,
+    CheckCircle2,
 } from "lucide-react";
 import Link from "next/link";
 import Header from "../../../components/header";
@@ -36,9 +37,7 @@ export default function ExercisesPage() {
     const [editDescription, setEditDescription] = useState("");
     const [editMuscleGroup, setEditMuscleGroup] =
         useState<WorkoutType>("upper");
-    const [editTargetBodyPart, setEditTargetBodyPart] = useState<
-        TargetBodyPart | ""
-    >("");
+    const [editBodyParts, setEditBodyParts] = useState<TargetBodyPart[]>([]);
     const [editIsUnilateral, setEditIsUnilateral] = useState(false);
 
     useEffect(() => {
@@ -69,7 +68,12 @@ export default function ExercisesPage() {
         try {
             const { data, error } = await supabase
                 .from("exercises")
-                .select("*")
+                .select(
+                    `
+                    *,
+                    body_parts:exercise_body_parts(*)
+                `
+                )
                 .eq("user_id", user?.id)
                 .order("name");
 
@@ -88,7 +92,11 @@ export default function ExercisesPage() {
         setEditName(exercise.name);
         setEditDescription(exercise.description || "");
         setEditMuscleGroup(exercise.muscle_group || "upper");
-        setEditTargetBodyPart(exercise.target_body_part || "");
+        // Load existing body parts
+        const existingBodyParts =
+            exercise.body_parts?.map((bp) => bp.body_part) ||
+            (exercise.target_body_part ? [exercise.target_body_part] : []);
+        setEditBodyParts(existingBodyParts);
         setEditIsUnilateral(exercise.is_unilateral || false);
     }
 
@@ -97,22 +105,24 @@ export default function ExercisesPage() {
         setEditName("");
         setEditDescription("");
         setEditMuscleGroup("upper");
-        setEditTargetBodyPart("");
+        setEditBodyParts([]);
         setEditIsUnilateral(false);
     }
 
     async function saveExercise() {
-        if (!editingExercise || !editName.trim()) return;
+        if (!editingExercise || !editName.trim() || editBodyParts.length === 0)
+            return;
 
         setSaving(true);
         try {
+            // Update exercise basic info
             const { error } = await supabase
                 .from("exercises")
                 .update({
                     name: editName,
                     description: editDescription || null,
                     muscle_group: editMuscleGroup,
-                    target_body_part: editTargetBodyPart || null,
+                    target_body_part: editBodyParts[0] || null, // Use first as primary for backward compatibility
                     is_unilateral: editIsUnilateral,
                     updated_at: new Date().toISOString(),
                 })
@@ -120,22 +130,31 @@ export default function ExercisesPage() {
 
             if (error) throw error;
 
-            // Update local state
-            setExercises(
-                exercises.map((ex) =>
-                    ex.id === editingExercise.id
-                        ? {
-                              ...ex,
-                              name: editName,
-                              description: editDescription || undefined,
-                              muscle_group: editMuscleGroup,
-                              target_body_part: editTargetBodyPart || null,
-                              is_unilateral: editIsUnilateral,
-                          }
-                        : ex
-                )
-            );
+            // Delete existing body parts
+            const { error: deleteError } = await supabase
+                .from("exercise_body_parts")
+                .delete()
+                .eq("exercise_id", editingExercise.id);
 
+            if (deleteError) throw deleteError;
+
+            // Insert new body parts
+            if (editBodyParts.length > 0) {
+                const bodyPartsToInsert = editBodyParts.map((bp, index) => ({
+                    exercise_id: editingExercise.id,
+                    body_part: bp,
+                    is_primary: index === 0,
+                }));
+
+                const { error: insertError } = await supabase
+                    .from("exercise_body_parts")
+                    .insert(bodyPartsToInsert);
+
+                if (insertError) throw insertError;
+            }
+
+            // Refresh the exercises list to get updated body_parts
+            await fetchExercises();
             cancelEditing();
         } catch (error) {
             console.error("Error updating exercise:", error);
@@ -186,12 +205,37 @@ export default function ExercisesPage() {
         abductors: "Odwodziciele",
     };
 
+    const bodyPartOptions: TargetBodyPart[] = [
+        "chest",
+        "back",
+        "shoulders",
+        "biceps",
+        "triceps",
+        "quads",
+        "hamstrings",
+        "glutes",
+        "calves",
+        "core",
+        "forearms",
+        "neck",
+        "adductors",
+        "abductors",
+    ];
+
     const muscleGroupLabels: Record<WorkoutType, string> = {
         upper: "Górna",
         lower: "Dolna",
         legs: "Nogi",
         cardio: "Cardio",
     };
+
+    function toggleEditBodyPart(bodyPart: TargetBodyPart) {
+        setEditBodyParts((prev) =>
+            prev.includes(bodyPart)
+                ? prev.filter((bp) => bp !== bodyPart)
+                : [...prev, bodyPart]
+        );
+    }
 
     if (loading) {
         return (
@@ -285,45 +329,67 @@ export default function ExercisesPage() {
                                         <option value="cardio">Cardio</option>
                                     </select>
 
-                                    <select
-                                        value={editTargetBodyPart}
-                                        onChange={(e) =>
-                                            setEditTargetBodyPart(
-                                                e.target.value as TargetBodyPart
-                                            )
-                                        }
-                                        className="w-full px-3 py-2 bg-neutral-800 border border-neutral-700 text-neutral-100 rounded-lg text-sm"
-                                    >
-                                        <option value="">
-                                            Wybierz część ciała
-                                        </option>
-                                        <option value="quads">
-                                            Czworogłowe uda
-                                        </option>
-                                        <option value="hamstrings">
-                                            Dwugłowe uda
-                                        </option>
-                                        <option value="glutes">Pośladki</option>
-                                        <option value="chest">
-                                            Klatka piersiowa
-                                        </option>
-                                        <option value="back">Plecy</option>
-                                        <option value="biceps">Biceps</option>
-                                        <option value="triceps">Triceps</option>
-                                        <option value="shoulders">Barki</option>
-                                        <option value="calves">Łydki</option>
-                                        <option value="core">Brzuch</option>
-                                        <option value="forearms">
-                                            Przedramiona
-                                        </option>
-                                        <option value="neck">Szyja</option>
-                                        <option value="adductors">
-                                            Przywodziciele
-                                        </option>
-                                        <option value="abductors">
-                                            Odwodziciele
-                                        </option>
-                                    </select>
+                                    <div>
+                                        <label className="block text-sm font-medium text-neutral-300 mb-2">
+                                            Wybierz partie mięśniowe (można
+                                            wybrać wiele)
+                                        </label>
+                                        <div className="bg-neutral-800 border border-neutral-700 rounded-lg max-h-48 overflow-y-auto">
+                                            {bodyPartOptions.map((bodyPart) => {
+                                                const isSelected =
+                                                    editBodyParts.includes(
+                                                        bodyPart
+                                                    );
+                                                return (
+                                                    <button
+                                                        key={bodyPart}
+                                                        type="button"
+                                                        onClick={() =>
+                                                            toggleEditBodyPart(
+                                                                bodyPart
+                                                            )
+                                                        }
+                                                        className={`w-full px-3 py-2 text-left border-b border-neutral-700 last:border-b-0 transition-colors ${
+                                                            isSelected
+                                                                ? "bg-orange-500/20 text-orange-400"
+                                                                : "text-neutral-300 hover:bg-neutral-700/50"
+                                                        }`}
+                                                    >
+                                                        <div className="flex items-center gap-2">
+                                                            <div
+                                                                className={`w-4 h-4 rounded border-2 flex items-center justify-center ${
+                                                                    isSelected
+                                                                        ? "bg-orange-500 border-orange-500"
+                                                                        : "border-neutral-600"
+                                                                }`}
+                                                            >
+                                                                {isSelected && (
+                                                                    <CheckCircle2 className="w-3 h-3 text-white" />
+                                                                )}
+                                                            </div>
+                                                            <span className="text-sm">
+                                                                {
+                                                                    targetBodyPartLabels[
+                                                                        bodyPart
+                                                                    ]
+                                                                }
+                                                            </span>
+                                                        </div>
+                                                    </button>
+                                                );
+                                            })}
+                                        </div>
+                                        {editBodyParts.length > 0 && (
+                                            <p className="text-xs text-neutral-400 mt-2">
+                                                Wybrano: {editBodyParts.length}{" "}
+                                                {editBodyParts.length === 1
+                                                    ? "partię"
+                                                    : editBodyParts.length < 5
+                                                    ? "partie"
+                                                    : "partii"}
+                                            </p>
+                                        )}
+                                    </div>
 
                                     <label className="flex items-center gap-2 text-sm text-neutral-300 cursor-pointer">
                                         <input
@@ -346,7 +412,9 @@ export default function ExercisesPage() {
                                         <button
                                             onClick={saveExercise}
                                             disabled={
-                                                saving || !editName.trim()
+                                                saving ||
+                                                !editName.trim() ||
+                                                editBodyParts.length === 0
                                             }
                                             className="flex-1 bg-orange-500 text-white px-4 py-2 rounded-lg hover:bg-orange-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 text-sm font-medium"
                                         >
@@ -396,18 +464,43 @@ export default function ExercisesPage() {
                                                         }
                                                     </span>
                                                 )}
-                                                {exercise.target_body_part && (
-                                                    <span className="text-xs px-2 py-1 rounded bg-purple-500/10 text-purple-400 border border-purple-500/20">
-                                                        {
-                                                            targetBodyPartLabels[
-                                                                exercise
-                                                                    .target_body_part
-                                                            ]
-                                                        }
-                                                    </span>
-                                                )}
+                                                {/* Show all body parts if available */}
+                                                {exercise.body_parts &&
+                                                exercise.body_parts.length > 0
+                                                    ? exercise.body_parts.map(
+                                                          (bp, index) => (
+                                                              <span
+                                                                  key={bp.id}
+                                                                  className={`text-xs px-2 py-1 rounded ${
+                                                                      bp.is_primary ||
+                                                                      index ===
+                                                                          0
+                                                                          ? "bg-orange-500/20 text-orange-400 border border-orange-500/30"
+                                                                          : "bg-neutral-800 text-neutral-400 border border-neutral-700"
+                                                                  }`}
+                                                              >
+                                                                  {
+                                                                      targetBodyPartLabels[
+                                                                          bp
+                                                                              .body_part
+                                                                      ]
+                                                                  }
+                                                              </span>
+                                                          )
+                                                      )
+                                                    : /* Fall back to old target_body_part if no body_parts */
+                                                      exercise.target_body_part && (
+                                                          <span className="text-xs px-2 py-1 rounded bg-purple-500/10 text-purple-400 border border-purple-500/20">
+                                                              {
+                                                                  targetBodyPartLabels[
+                                                                      exercise
+                                                                          .target_body_part
+                                                                  ]
+                                                              }
+                                                          </span>
+                                                      )}
                                                 {exercise.is_unilateral && (
-                                                    <span className="text-xs px-2 py-1 rounded bg-orange-500/10 text-orange-400 border border-orange-500/20">
+                                                    <span className="text-xs px-2 py-1 rounded bg-cyan-500/10 text-cyan-400 border border-cyan-500/20">
                                                         Jednostronne
                                                     </span>
                                                 )}

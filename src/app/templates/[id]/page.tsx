@@ -23,6 +23,7 @@ import {
     Share2,
     ClipboardList,
     TrendingUp,
+    CheckCircle2,
 } from "lucide-react";
 import Link from "next/link";
 import Header from "../../../../components/header";
@@ -56,9 +57,9 @@ export default function TemplateDetailPage() {
     );
     const [showExercisePicker, setShowExercisePicker] = useState(false);
     const [newExerciseName, setNewExerciseName] = useState("");
-    const [newExerciseTarget, setNewExerciseTarget] = useState<
-        TargetBodyPart | ""
-    >("");
+    const [newExerciseBodyParts, setNewExerciseBodyParts] = useState<
+        TargetBodyPart[]
+    >([]);
     const [editingExerciseIndex, setEditingExerciseIndex] = useState<
         number | null
     >(null);
@@ -113,14 +114,17 @@ export default function TemplateDetailPage() {
             setEditType(templateData.workout_type);
             setEditDescription(templateData.description || "");
 
-            // Fetch template exercises
+            // Fetch template exercises with body parts
             const { data: exercisesData, error: exercisesError } =
                 await supabase
                     .from("workout_template_exercises")
                     .select(
                         `
           *,
-          exercise:exercises(*)
+          exercise:exercises(
+            *,
+            body_parts:exercise_body_parts(*)
+          )
         `
                     )
                     .eq("workout_template_id", templateId)
@@ -163,7 +167,12 @@ export default function TemplateDetailPage() {
         try {
             const { data, error } = await supabase
                 .from("exercises")
-                .select("*")
+                .select(
+                    `
+                    *,
+                    body_parts:exercise_body_parts(*)
+                `
+                )
                 .order("name");
 
             if (error) throw error;
@@ -174,15 +183,21 @@ export default function TemplateDetailPage() {
     }
 
     async function createNewExercise() {
-        if (!newExerciseName.trim() || !user) return;
+        if (
+            !newExerciseName.trim() ||
+            !user ||
+            newExerciseBodyParts.length === 0
+        )
+            return;
 
         try {
+            // Create the exercise first
             const { data, error } = await supabase
                 .from("exercises")
                 .insert({
                     name: newExerciseName,
                     muscle_group: editType,
-                    target_body_part: newExerciseTarget || null,
+                    target_body_part: newExerciseBodyParts[0] || null, // Use first selected as primary for backward compatibility
                     user_id: user.id,
                 })
                 .select()
@@ -190,9 +205,23 @@ export default function TemplateDetailPage() {
 
             if (error) throw error;
 
+            // Save all selected body parts to the junction table
+            const bodyPartsToInsert = newExerciseBodyParts.map((bp, index) => ({
+                exercise_id: data.id,
+                body_part: bp,
+                is_primary: index === 0, // First selected is primary
+            }));
+
+            const { error: bodyPartsError } = await supabase
+                .from("exercise_body_parts")
+                .insert(bodyPartsToInsert);
+
+            if (bodyPartsError) throw bodyPartsError;
+
             setAllExercises([...allExercises, data]);
             addExerciseToTemplate(data);
             setNewExerciseName("");
+            setNewExerciseBodyParts([]);
         } catch (error) {
             console.error("Error creating exercise:", error);
             alert("Błąd podczas tworzenia ćwiczenia");
@@ -438,6 +467,31 @@ export default function TemplateDetailPage() {
         abductors: "Odwodziciele",
     };
 
+    const bodyPartOptions: TargetBodyPart[] = [
+        "quads",
+        "hamstrings",
+        "glutes",
+        "chest",
+        "back",
+        "biceps",
+        "triceps",
+        "shoulders",
+        "calves",
+        "core",
+        "forearms",
+        "neck",
+        "adductors",
+        "abductors",
+    ];
+
+    function toggleBodyPart(bodyPart: TargetBodyPart) {
+        setNewExerciseBodyParts((prev) =>
+            prev.includes(bodyPart)
+                ? prev.filter((bp) => bp !== bodyPart)
+                : [...prev, bodyPart]
+        );
+    }
+
     if (loading) {
         return (
             <div className="min-h-screen flex items-center justify-center bg-neutral-950">
@@ -581,8 +635,31 @@ export default function TemplateDetailPage() {
                                                     {ex.exercise?.name ||
                                                         `Exercise ID: ${ex.exercise_id}`}
                                                 </h3>
-                                                {ex.exercise
-                                                    ?.target_body_part && (
+                                                {ex.exercise?.body_parts &&
+                                                ex.exercise.body_parts.length >
+                                                    0 ? (
+                                                    <div className="flex flex-wrap gap-1 mt-1">
+                                                        {ex.exercise.body_parts.map(
+                                                            (bp, idx) => (
+                                                                <span
+                                                                    key={idx}
+                                                                    className={`text-xs px-2 py-0.5 rounded ${
+                                                                        bp.is_primary
+                                                                            ? "bg-orange-500/20 text-orange-400"
+                                                                            : "bg-neutral-800 text-neutral-400"
+                                                                    }`}
+                                                                >
+                                                                    {targetBodyPartLabels[
+                                                                        bp
+                                                                            .body_part
+                                                                    ] ||
+                                                                        bp.body_part}
+                                                                </span>
+                                                            )
+                                                        )}
+                                                    </div>
+                                                ) : ex.exercise
+                                                      ?.target_body_part ? (
                                                     <p className="text-xs text-neutral-400 mt-1">
                                                         {targetBodyPartLabels[
                                                             ex.exercise
@@ -591,7 +668,7 @@ export default function TemplateDetailPage() {
                                                             ex.exercise
                                                                 .target_body_part}
                                                     </p>
-                                                )}
+                                                ) : null}
                                                 {!ex.exercise && (
                                                     <p className="text-xs text-red-400 mt-1">
                                                         Błąd: Nie można
@@ -715,7 +792,7 @@ export default function TemplateDetailPage() {
                                         Wybierz ćwiczenie
                                     </h3>
 
-                                    <div className="mb-4 space-y-2">
+                                    <div className="mb-4 space-y-3">
                                         <input
                                             type="text"
                                             value={newExerciseName}
@@ -731,59 +808,85 @@ export default function TemplateDetailPage() {
                                                 createNewExercise()
                                             }
                                         />
-                                        <select
-                                            value={newExerciseTarget}
-                                            onChange={(e) =>
-                                                setNewExerciseTarget(
-                                                    e.target
-                                                        .value as TargetBodyPart
-                                                )
-                                            }
-                                            className="w-full px-4 py-2 bg-neutral-900 border border-neutral-700 text-neutral-100 rounded-lg"
-                                        >
-                                            <option value="">
-                                                Wybierz część ciała
-                                            </option>
-                                            <option value="quads">
-                                                Czworogłowe uda
-                                            </option>
-                                            <option value="hamstrings">
-                                                Dwugłowe uda
-                                            </option>
-                                            <option value="glutes">
-                                                Pośladki
-                                            </option>
-                                            <option value="chest">
-                                                Klatka piersiowa
-                                            </option>
-                                            <option value="back">Plecy</option>
-                                            <option value="biceps">
-                                                Biceps
-                                            </option>
-                                            <option value="triceps">
-                                                Triceps
-                                            </option>
-                                            <option value="shoulders">
-                                                Barki
-                                            </option>
-                                            <option value="calves">
-                                                Łydki
-                                            </option>
-                                            <option value="core">Brzuch</option>
-                                            <option value="forearms">
-                                                Przedramiona
-                                            </option>
-                                            <option value="neck">Szyja</option>
-                                            <option value="adductors">
-                                                Przywodziciele
-                                            </option>
-                                            <option value="abductors">
-                                                Odwodziciele
-                                            </option>
-                                        </select>
+
+                                        <div>
+                                            <label className="block text-sm font-medium text-neutral-300 mb-2">
+                                                Wybierz partie mięśniowe (można
+                                                wybrać wiele)
+                                            </label>
+                                            <div className="bg-neutral-800 border border-neutral-700 rounded-lg max-h-60 overflow-y-auto">
+                                                {bodyPartOptions.map(
+                                                    (bodyPart) => {
+                                                        const isSelected =
+                                                            newExerciseBodyParts.includes(
+                                                                bodyPart
+                                                            );
+                                                        return (
+                                                            <button
+                                                                key={bodyPart}
+                                                                type="button"
+                                                                onClick={() =>
+                                                                    toggleBodyPart(
+                                                                        bodyPart
+                                                                    )
+                                                                }
+                                                                className={`w-full px-3 py-2 text-left border-b border-neutral-700 last:border-b-0 transition-colors ${
+                                                                    isSelected
+                                                                        ? "bg-orange-500/20 text-orange-400"
+                                                                        : "text-neutral-300 hover:bg-neutral-700/50"
+                                                                }`}
+                                                            >
+                                                                <div className="flex items-center gap-2">
+                                                                    <div
+                                                                        className={`w-4 h-4 rounded border-2 flex items-center justify-center ${
+                                                                            isSelected
+                                                                                ? "bg-orange-500 border-orange-500"
+                                                                                : "border-neutral-600"
+                                                                        }`}
+                                                                    >
+                                                                        {isSelected && (
+                                                                            <CheckCircle2 className="w-3 h-3 text-white" />
+                                                                        )}
+                                                                    </div>
+                                                                    <span className="text-sm">
+                                                                        {
+                                                                            targetBodyPartLabels[
+                                                                                bodyPart
+                                                                            ]
+                                                                        }
+                                                                    </span>
+                                                                </div>
+                                                            </button>
+                                                        );
+                                                    }
+                                                )}
+                                            </div>
+                                            {newExerciseBodyParts.length >
+                                                0 && (
+                                                <p className="text-xs text-neutral-400 mt-2">
+                                                    Wybrano:{" "}
+                                                    {
+                                                        newExerciseBodyParts.length
+                                                    }{" "}
+                                                    {newExerciseBodyParts.length ===
+                                                    1
+                                                        ? "partię"
+                                                        : newExerciseBodyParts.length <
+                                                          5
+                                                        ? "partie"
+                                                        : "partii"}
+                                                </p>
+                                            )}
+                                        </div>
+
                                         <button
                                             onClick={createNewExercise}
-                                            className="w-full bg-orange-500 text-white px-4 py-2 rounded-lg hover:bg-orange-600 transition-colors"
+                                            disabled={
+                                                !newExerciseName.trim() ||
+                                                newExerciseBodyParts.length ===
+                                                    0
+                                            }
+                                            className="w-full bg-orange-500 text-white px-4 py-2 rounded-lg hover:bg-orange-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                                         >
                                             Utwórz nowe ćwiczenie
                                         </button>
