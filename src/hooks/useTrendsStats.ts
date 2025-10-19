@@ -168,7 +168,7 @@ export function useTrendsStats(userId: string | undefined) {
 
                 const topExercises = Array.from(exerciseFrequency.entries())
                     .sort((a, b) => b[1] - a[1])
-                    .slice(0, 3)
+                    // Removed .slice(0, 3) to get all exercises
                     .map(([id]) => id);
 
                 const topExerciseProgress: ExerciseProgress[] = topExercises

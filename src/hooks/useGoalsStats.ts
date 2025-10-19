@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { TargetBodyPart } from "@/types/database";
 
 export interface Badge {
     id: string;
@@ -9,6 +10,7 @@ export interface Badge {
     unlocked: boolean;
     progress?: number;
     target?: number;
+    category?: "general" | "bodypart" | "balance";
 }
 
 export interface PersonalRecord {
@@ -69,7 +71,9 @@ export function useGoalsStats(userId: string | undefined) {
                 // Fetch exercise logs
                 const { data: exerciseLogs } = await supabase
                     .from("exercise_logs")
-                    .select("id, exercise_id, exercises(name)")
+                    .select(
+                        "id, exercise_id, exercises(name, target_body_part)"
+                    )
                     .in("workout_session_id", sessionIds);
 
                 const exerciseLogIds = (exerciseLogs || []).map((l) => l.id);
@@ -138,6 +142,7 @@ export function useGoalsStats(userId: string | undefined) {
                         unlocked: totalWorkouts >= 1,
                         progress: Math.min(totalWorkouts, 1),
                         target: 1,
+                        category: "general",
                     },
                     {
                         id: "10-workouts",
@@ -147,6 +152,7 @@ export function useGoalsStats(userId: string | undefined) {
                         unlocked: totalWorkouts >= 10,
                         progress: Math.min(totalWorkouts, 10),
                         target: 10,
+                        category: "general",
                     },
                     {
                         id: "50-workouts",
@@ -156,6 +162,7 @@ export function useGoalsStats(userId: string | undefined) {
                         unlocked: totalWorkouts >= 50,
                         progress: Math.min(totalWorkouts, 50),
                         target: 50,
+                        category: "general",
                     },
                     {
                         id: "100-workouts",
@@ -165,6 +172,7 @@ export function useGoalsStats(userId: string | undefined) {
                         unlocked: totalWorkouts >= 100,
                         progress: Math.min(totalWorkouts, 100),
                         target: 100,
+                        category: "general",
                     },
                     {
                         id: "7-day-streak",
@@ -174,6 +182,7 @@ export function useGoalsStats(userId: string | undefined) {
                         unlocked: currentStreak >= 7,
                         progress: Math.min(currentStreak, 7),
                         target: 7,
+                        category: "general",
                     },
                     {
                         id: "30-day-streak",
@@ -183,6 +192,7 @@ export function useGoalsStats(userId: string | undefined) {
                         unlocked: currentStreak >= 30,
                         progress: Math.min(currentStreak, 30),
                         target: 30,
+                        category: "general",
                     },
                     {
                         id: "volume-10k",
@@ -192,6 +202,7 @@ export function useGoalsStats(userId: string | undefined) {
                         unlocked: totalVolume >= 10000,
                         progress: Math.min(totalVolume, 10000),
                         target: 10000,
+                        category: "general",
                     },
                     {
                         id: "volume-100k",
@@ -201,8 +212,197 @@ export function useGoalsStats(userId: string | undefined) {
                         unlocked: totalVolume >= 100000,
                         progress: Math.min(totalVolume, 100000),
                         target: 100000,
+                        category: "general",
                     },
                 ];
+
+                // Calculate body part specific volumes and exercise counts
+                const bodyPartStats = new Map<
+                    TargetBodyPart,
+                    { volume: number; exercises: Set<string> }
+                >();
+
+                setLogs.forEach((set) => {
+                    const log = exerciseLogs?.find(
+                        (l) => l.id === set.exercise_log_id
+                    );
+                    if (!log?.exercises) return;
+
+                    const exercise = Array.isArray(log.exercises)
+                        ? log.exercises[0]
+                        : log.exercises;
+                    const targetBodyPart = exercise.target_body_part as
+                        | TargetBodyPart
+                        | undefined;
+
+                    if (!targetBodyPart) return;
+
+                    const volume = (set.weight || 0) * set.reps;
+
+                    if (!bodyPartStats.has(targetBodyPart)) {
+                        bodyPartStats.set(targetBodyPart, {
+                            volume: 0,
+                            exercises: new Set(),
+                        });
+                    }
+
+                    const stats = bodyPartStats.get(targetBodyPart)!;
+                    stats.volume += volume;
+                    stats.exercises.add(log.exercise_id);
+                });
+
+                // Calculate balance score (lower is better)
+                const volumes = Array.from(bodyPartStats.values())
+                    .map((s) => s.volume)
+                    .filter((v) => v > 0);
+                let balanceScore = 0;
+                if (volumes.length >= 2) {
+                    const avg =
+                        volumes.reduce((a, b) => a + b, 0) / volumes.length;
+                    const variance =
+                        volumes.reduce(
+                            (sum, v) => sum + Math.pow(v - avg, 2),
+                            0
+                        ) / volumes.length;
+                    const stdDev = Math.sqrt(variance);
+                    balanceScore = (stdDev / avg) * 100; // Coefficient of variation
+                }
+
+                // Body part specific badges
+                const bodyPartBadges: Badge[] = [
+                    {
+                        id: "quad-king",
+                        title: "Król Nóg",
+                        description:
+                            "Osiągnij 10,000kg objętości na czworogłowe",
+                        icon: "🦵",
+                        unlocked:
+                            (bodyPartStats.get("quads")?.volume || 0) >= 10000,
+                        progress: Math.min(
+                            bodyPartStats.get("quads")?.volume || 0,
+                            10000
+                        ),
+                        target: 10000,
+                        category: "bodypart",
+                    },
+                    {
+                        id: "chest-master",
+                        title: "Mistrz Klatki",
+                        description: "Wykonuj 5 różnych ćwiczeń na klatkę",
+                        icon: "💎",
+                        unlocked:
+                            (bodyPartStats.get("chest")?.exercises.size || 0) >=
+                            5,
+                        progress:
+                            bodyPartStats.get("chest")?.exercises.size || 0,
+                        target: 5,
+                        category: "bodypart",
+                    },
+                    {
+                        id: "back-boss",
+                        title: "Boss Pleców",
+                        description: "Osiągnij 15,000kg objętości na plecy",
+                        icon: "🦁",
+                        unlocked:
+                            (bodyPartStats.get("back")?.volume || 0) >= 15000,
+                        progress: Math.min(
+                            bodyPartStats.get("back")?.volume || 0,
+                            15000
+                        ),
+                        target: 15000,
+                        category: "bodypart",
+                    },
+                    {
+                        id: "shoulder-sentinel",
+                        title: "Strażnik Barków",
+                        description: "Osiągnij 8,000kg objętości na barki",
+                        icon: "🛡️",
+                        unlocked:
+                            (bodyPartStats.get("shoulders")?.volume || 0) >=
+                            8000,
+                        progress: Math.min(
+                            bodyPartStats.get("shoulders")?.volume || 0,
+                            8000
+                        ),
+                        target: 8000,
+                        category: "bodypart",
+                    },
+                    {
+                        id: "arm-assassin",
+                        title: "Zabójca Ramion",
+                        description:
+                            "Łączna objętość biceps + triceps: 12,000kg",
+                        icon: "💪",
+                        unlocked:
+                            (bodyPartStats.get("biceps")?.volume || 0) +
+                                (bodyPartStats.get("triceps")?.volume || 0) >=
+                            12000,
+                        progress: Math.min(
+                            (bodyPartStats.get("biceps")?.volume || 0) +
+                                (bodyPartStats.get("triceps")?.volume || 0),
+                            12000
+                        ),
+                        target: 12000,
+                        category: "bodypart",
+                    },
+                    {
+                        id: "glute-guru",
+                        title: "Guru Pośladków",
+                        description: "Osiągnij 12,000kg objętości na pośladki",
+                        icon: "🍑",
+                        unlocked:
+                            (bodyPartStats.get("glutes")?.volume || 0) >= 12000,
+                        progress: Math.min(
+                            bodyPartStats.get("glutes")?.volume || 0,
+                            12000
+                        ),
+                        target: 12000,
+                        category: "bodypart",
+                    },
+                    {
+                        id: "core-commander",
+                        title: "Komandos Brzucha",
+                        description: "Osiągnij 5,000kg objętości na brzuch",
+                        icon: "⭐",
+                        unlocked:
+                            (bodyPartStats.get("core")?.volume || 0) >= 5000,
+                        progress: Math.min(
+                            bodyPartStats.get("core")?.volume || 0,
+                            5000
+                        ),
+                        target: 5000,
+                        category: "bodypart",
+                    },
+                    {
+                        id: "balance-champion",
+                        title: "Mistrz Balansu",
+                        description:
+                            "Trenuj równomiernie - wszystkie partie <15% różnicy",
+                        icon: "⚖️",
+                        unlocked:
+                            balanceScore > 0 &&
+                            balanceScore < 15 &&
+                            bodyPartStats.size >= 8,
+                        progress:
+                            balanceScore > 0
+                                ? Math.max(0, 15 - balanceScore)
+                                : 0,
+                        target: 15,
+                        category: "balance",
+                    },
+                    {
+                        id: "full-body-warrior",
+                        title: "Wojownik Pełnego Ciała",
+                        description: "Trenuj wszystkie 14 partii mięśniowych",
+                        icon: "🌟",
+                        unlocked: bodyPartStats.size >= 14,
+                        progress: bodyPartStats.size,
+                        target: 14,
+                        category: "balance",
+                    },
+                ];
+
+                badges.push(...bodyPartBadges);
 
                 // Find recent PRs (last 30 days)
                 const thirtyDaysAgo = new Date();

@@ -59,6 +59,9 @@ export default function TemplateDetailPage() {
     const [newExerciseTarget, setNewExerciseTarget] = useState<
         TargetBodyPart | ""
     >("");
+    const [editingExerciseIndex, setEditingExerciseIndex] = useState<
+        number | null
+    >(null);
 
     useEffect(() => {
         if (!user) {
@@ -230,6 +233,35 @@ export default function TemplateDetailPage() {
         setEditExercises(newExercises);
     }
 
+    function updateExerciseTarget(index: number, target: TargetBodyPart | "") {
+        const newExercises = [...editExercises];
+        newExercises[index].exercise = {
+            ...newExercises[index].exercise,
+            target_body_part: target || null,
+        };
+        setEditExercises(newExercises);
+    }
+
+    async function saveExerciseChanges(index: number) {
+        const exercise = editExercises[index];
+        try {
+            // Update the exercise in the database
+            const { error } = await supabase
+                .from("exercises")
+                .update({
+                    target_body_part: exercise.exercise.target_body_part,
+                    updated_at: new Date().toISOString(),
+                })
+                .eq("id", exercise.exercise_id);
+
+            if (error) throw error;
+            setEditingExerciseIndex(null);
+        } catch (error) {
+            console.error("Error updating exercise:", error);
+            alert("Błąd podczas aktualizacji ćwiczenia");
+        }
+    }
+
     function moveExercise(index: number, direction: "up" | "down") {
         if (
             (direction === "up" && index === 0) ||
@@ -389,6 +421,23 @@ export default function TemplateDetailPage() {
         cardio: "bg-orange-500/10 text-orange-400 border border-orange-500/20",
     };
 
+    const targetBodyPartLabels: Record<string, string> = {
+        quads: "Czworogłowe uda",
+        hamstrings: "Dwugłowe uda",
+        glutes: "Pośladki",
+        chest: "Klatka piersiowa",
+        back: "Plecy",
+        biceps: "Biceps",
+        triceps: "Triceps",
+        shoulders: "Barki",
+        calves: "Łydki",
+        core: "Brzuch",
+        forearms: "Przedramiona",
+        neck: "Szyja",
+        adductors: "Przywodziciele",
+        abductors: "Odwodziciele",
+    };
+
     if (loading) {
         return (
             <div className="min-h-screen flex items-center justify-center bg-neutral-950">
@@ -535,10 +584,12 @@ export default function TemplateDetailPage() {
                                                 {ex.exercise
                                                     ?.target_body_part && (
                                                     <p className="text-xs text-neutral-400 mt-1">
-                                                        {
+                                                        {targetBodyPartLabels[
                                                             ex.exercise
                                                                 .target_body_part
-                                                        }
+                                                        ] ||
+                                                            ex.exercise
+                                                                .target_body_part}
                                                     </p>
                                                 )}
                                                 {!ex.exercise && (
@@ -664,86 +715,78 @@ export default function TemplateDetailPage() {
                                         Wybierz ćwiczenie
                                     </h3>
 
-                                    <div className="mb-4">
-                                        <div className="flex gap-2">
-                                            <input
-                                                type="text"
-                                                value={newExerciseName}
-                                                onChange={(e) =>
-                                                    setNewExerciseName(
-                                                        e.target.value
-                                                    )
-                                                }
-                                                placeholder="Nazwa nowego ćwiczenia"
-                                                className="flex-1 px-4 py-2 border border-neutral-700 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                                onKeyPress={(e) =>
-                                                    e.key === "Enter" &&
-                                                    createNewExercise()
-                                                }
-                                            />
-                                            <select
-                                                value={newExerciseTarget}
-                                                onChange={(e) =>
-                                                    setNewExerciseTarget(
-                                                        e.target
-                                                            .value as TargetBodyPart
-                                                    )
-                                                }
-                                                className="px-3 py-2 bg-neutral-900 border border-neutral-700 text-neutral-100 rounded-lg text-sm mr-2"
-                                            >
-                                                <option value="">
-                                                    Część ciała
-                                                </option>
-                                                <option value="quads">
-                                                    Quads
-                                                </option>
-                                                <option value="hamstrings">
-                                                    Hamstrings
-                                                </option>
-                                                <option value="glutes">
-                                                    Glutes
-                                                </option>
-                                                <option value="chest">
-                                                    Chest
-                                                </option>
-                                                <option value="back">
-                                                    Back
-                                                </option>
-                                                <option value="biceps">
-                                                    Biceps
-                                                </option>
-                                                <option value="triceps">
-                                                    Triceps
-                                                </option>
-                                                <option value="shoulders">
-                                                    Shoulders
-                                                </option>
-                                                <option value="calves">
-                                                    Calves
-                                                </option>
-                                                <option value="core">
-                                                    Core
-                                                </option>
-                                                <option value="forearms">
-                                                    Forearms
-                                                </option>
-                                                <option value="neck">
-                                                    Neck
-                                                </option>
-                                                <option value="adductors">
-                                                    Adductors
-                                                </option>
-                                                <option value="abductors">
-                                                    Abductors
-                                                </option>
-                                            </select>
-                                            <button
-                                                onClick={createNewExercise}
-                                                className="bg-orange-500 text-white px-4 py-2 rounded-lg hover:bg-orange-600 transition-colors"
-                                            >
-                                                Utwórz nowe
-                                            </button>
-                                        </div>
+                                    <div className="mb-4 space-y-2">
+                                        <input
+                                            type="text"
+                                            value={newExerciseName}
+                                            onChange={(e) =>
+                                                setNewExerciseName(
+                                                    e.target.value
+                                                )
+                                            }
+                                            placeholder="Nazwa nowego ćwiczenia"
+                                            className="w-full px-4 py-2 border border-neutral-700 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                            onKeyPress={(e) =>
+                                                e.key === "Enter" &&
+                                                createNewExercise()
+                                            }
+                                        />
+                                        <select
+                                            value={newExerciseTarget}
+                                            onChange={(e) =>
+                                                setNewExerciseTarget(
+                                                    e.target
+                                                        .value as TargetBodyPart
+                                                )
+                                            }
+                                            className="w-full px-4 py-2 bg-neutral-900 border border-neutral-700 text-neutral-100 rounded-lg"
+                                        >
+                                            <option value="">
+                                                Wybierz część ciała
+                                            </option>
+                                            <option value="quads">
+                                                Czworogłowe uda
+                                            </option>
+                                            <option value="hamstrings">
+                                                Dwugłowe uda
+                                            </option>
+                                            <option value="glutes">
+                                                Pośladki
+                                            </option>
+                                            <option value="chest">
+                                                Klatka piersiowa
+                                            </option>
+                                            <option value="back">Plecy</option>
+                                            <option value="biceps">
+                                                Biceps
+                                            </option>
+                                            <option value="triceps">
+                                                Triceps
+                                            </option>
+                                            <option value="shoulders">
+                                                Barki
+                                            </option>
+                                            <option value="calves">
+                                                Łydki
+                                            </option>
+                                            <option value="core">Brzuch</option>
+                                            <option value="forearms">
+                                                Przedramiona
+                                            </option>
+                                            <option value="neck">Szyja</option>
+                                            <option value="adductors">
+                                                Przywodziciele
+                                            </option>
+                                            <option value="abductors">
+                                                Odwodziciele
+                                            </option>
+                                        </select>
+                                        <button
+                                            onClick={createNewExercise}
+                                            className="w-full bg-orange-500 text-white px-4 py-2 rounded-lg hover:bg-orange-600 transition-colors"
+                                        >
+                                            Utwórz nowe ćwiczenie
+                                        </button>
                                     </div>
 
                                     <div className="max-h-60 overflow-y-auto space-y-2">
@@ -785,56 +828,139 @@ export default function TemplateDetailPage() {
                                     {editExercises.map((exercise, index) => (
                                         <div
                                             key={exercise.id}
-                                            className="flex items-center gap-3 p-4 bg-neutral-950 rounded-lg"
+                                            className="p-4 bg-neutral-950 rounded-lg space-y-3"
                                         >
-                                            <div className="flex flex-col gap-1">
-                                                <button
-                                                    onClick={() =>
-                                                        moveExercise(
-                                                            index,
-                                                            "up"
-                                                        )
-                                                    }
-                                                    disabled={index === 0}
-                                                    className="text-neutral-600 hover:text-neutral-400 disabled:opacity-30"
-                                                >
-                                                    ▲
-                                                </button>
-                                                <button
-                                                    onClick={() =>
-                                                        moveExercise(
-                                                            index,
-                                                            "down"
-                                                        )
-                                                    }
-                                                    disabled={
-                                                        index ===
-                                                        editExercises.length - 1
-                                                    }
-                                                    className="text-neutral-600 hover:text-neutral-400 disabled:opacity-30"
-                                                >
-                                                    ▼
-                                                </button>
-                                            </div>
-
-                                            <div className="flex-1">
-                                                <p className="font-medium text-neutral-100">
-                                                    {exercise.exercise.name}
-                                                </p>
-                                                {exercise.exercise
-                                                    .target_body_part && (
-                                                    <p className="text-xs text-neutral-400 mt-1">
-                                                        {
-                                                            exercise.exercise
-                                                                .target_body_part
+                                            {/* Exercise Name and Move Buttons */}
+                                            <div className="flex items-center gap-3">
+                                                <div className="flex flex-col gap-1">
+                                                    <button
+                                                        onClick={() =>
+                                                            moveExercise(
+                                                                index,
+                                                                "up"
+                                                            )
                                                         }
+                                                        disabled={index === 0}
+                                                        className="text-neutral-600 hover:text-neutral-400 disabled:opacity-30"
+                                                    >
+                                                        ▲
+                                                    </button>
+                                                    <button
+                                                        onClick={() =>
+                                                            moveExercise(
+                                                                index,
+                                                                "down"
+                                                            )
+                                                        }
+                                                        disabled={
+                                                            index ===
+                                                            editExercises.length -
+                                                                1
+                                                        }
+                                                        className="text-neutral-600 hover:text-neutral-400 disabled:opacity-30"
+                                                    >
+                                                        ▼
+                                                    </button>
+                                                </div>
+
+                                                <div className="flex-1">
+                                                    <p className="font-medium text-neutral-100">
+                                                        {exercise.exercise.name}
                                                     </p>
-                                                )}
+                                                </div>
+
+                                                <button
+                                                    onClick={() =>
+                                                        removeExercise(index)
+                                                    }
+                                                    className="text-red-600 hover:text-red-700"
+                                                >
+                                                    <Trash2 className="w-5 h-5" />
+                                                </button>
                                             </div>
 
-                                            <div className="flex items-center gap-2">
-                                                <label className="text-sm text-neutral-400">
-                                                    Serie:
+                                            {/* Target Body Part */}
+                                            <div>
+                                                <label className="block text-xs text-neutral-400 mb-1">
+                                                    Część ciała
+                                                </label>
+                                                <select
+                                                    value={
+                                                        exercise.exercise
+                                                            .target_body_part ||
+                                                        ""
+                                                    }
+                                                    onChange={(e) => {
+                                                        updateExerciseTarget(
+                                                            index,
+                                                            e.target.value as
+                                                                | TargetBodyPart
+                                                                | ""
+                                                        );
+                                                        if (
+                                                            !exercise.id.startsWith(
+                                                                "temp-"
+                                                            )
+                                                        ) {
+                                                            setEditingExerciseIndex(
+                                                                index
+                                                            );
+                                                        }
+                                                    }}
+                                                    className="w-full px-3 py-2 bg-neutral-900 border border-neutral-700 text-neutral-100 rounded-lg text-sm"
+                                                >
+                                                    <option value="">
+                                                        Wybierz część ciała
+                                                    </option>
+                                                    <option value="quads">
+                                                        Czworogłowe uda
+                                                    </option>
+                                                    <option value="hamstrings">
+                                                        Dwugłowe uda
+                                                    </option>
+                                                    <option value="glutes">
+                                                        Pośladki
+                                                    </option>
+                                                    <option value="chest">
+                                                        Klatka piersiowa
+                                                    </option>
+                                                    <option value="back">
+                                                        Plecy
+                                                    </option>
+                                                    <option value="biceps">
+                                                        Biceps
+                                                    </option>
+                                                    <option value="triceps">
+                                                        Triceps
+                                                    </option>
+                                                    <option value="shoulders">
+                                                        Barki
+                                                    </option>
+                                                    <option value="calves">
+                                                        Łydki
+                                                    </option>
+                                                    <option value="core">
+                                                        Brzuch
+                                                    </option>
+                                                    <option value="forearms">
+                                                        Przedramiona
+                                                    </option>
+                                                    <option value="neck">
+                                                        Szyja
+                                                    </option>
+                                                    <option value="adductors">
+                                                        Przywodziciele
+                                                    </option>
+                                                    <option value="abductors">
+                                                        Odwodziciele
+                                                    </option>
+                                                </select>
+                                            </div>
+
+                                            {/* Sets Count */}
+                                            <div>
+                                                <label className="block text-xs text-neutral-400 mb-1">
+                                                    Liczba serii
                                                 </label>
                                                 <input
                                                     type="number"
@@ -848,18 +974,25 @@ export default function TemplateDetailPage() {
                                                             ) || 1
                                                         )
                                                     }
-                                                    className="w-16 px-2 py-1 border border-neutral-700 rounded text-center"
+                                                    className="w-full px-3 py-2 bg-neutral-900 border border-neutral-700 text-neutral-100 rounded-lg text-sm"
                                                 />
                                             </div>
 
-                                            <button
-                                                onClick={() =>
-                                                    removeExercise(index)
-                                                }
-                                                className="text-red-600 hover:text-red-700"
-                                            >
-                                                <Trash2 className="w-5 h-5" />
-                                            </button>
+                                            {/* Save button for existing exercises */}
+                                            {!exercise.id.startsWith("temp-") &&
+                                                editingExerciseIndex ===
+                                                    index && (
+                                                    <button
+                                                        onClick={() =>
+                                                            saveExerciseChanges(
+                                                                index
+                                                            )
+                                                        }
+                                                        className="w-full bg-blue-500 text-white px-3 py-2 rounded-lg hover:bg-blue-600 transition-colors text-sm"
+                                                    >
+                                                        Zapisz zmiany ćwiczenia
+                                                    </button>
+                                                )}
                                         </div>
                                     ))}
                                 </div>

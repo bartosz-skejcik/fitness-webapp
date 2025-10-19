@@ -13,6 +13,7 @@ import {
     ClipboardList,
     Play,
     Loader2,
+    Activity,
 } from "lucide-react";
 import Link from "next/link";
 import Header from "../../../components/header";
@@ -20,8 +21,9 @@ import GeneralStats from "../../../components/stats/GeneralStats";
 import StrengthStats from "../../../components/stats/StrengthStats";
 import TrendsStats from "../../../components/stats/TrendsStats";
 import GoalsStats from "../../../components/stats/GoalsStats";
+import BodyPartAnalysis from "../../../components/stats/BodyPartAnalysis";
 
-type TabType = "general" | "strength" | "trends" | "goals";
+type TabType = "general" | "strength" | "trends" | "goals" | "bodyparts";
 
 export default function ProgressPage() {
     const { user, loading: authLoading } = useAuth();
@@ -66,6 +68,11 @@ export default function ProgressPage() {
             id: "goals",
             label: "Cele",
             icon: <Target className="w-4 h-4" />,
+        },
+        {
+            id: "bodyparts",
+            label: "Analiza Partii",
+            icon: <Activity className="w-4 h-4" />,
         },
     ];
 
@@ -120,6 +127,9 @@ export default function ProgressPage() {
                         <TrendsStats userId={user?.id} />
                     )}
                     {activeTab === "goals" && <GoalsStats userId={user?.id} />}
+                    {activeTab === "bodyparts" && (
+                        <BodyPartAnalysis userId={user?.id} />
+                    )}
                 </div>
             </main>
 

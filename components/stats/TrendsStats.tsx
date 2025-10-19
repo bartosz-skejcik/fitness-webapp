@@ -5,8 +5,25 @@ import {
     Activity,
     Loader2,
     BarChart3,
+    TrendingDown,
+    ChevronDown,
+    Check,
 } from "lucide-react";
 import { useTrendsStats } from "@/hooks/useTrendsStats";
+import { Line, LineChart, XAxis, CartesianGrid, LabelList } from "recharts";
+import { ChartContainer, ChartTooltip, ChartTooltipContent } from "../ui/chart";
+import {
+    Card,
+    CardContent,
+    CardDescription,
+    CardFooter,
+    CardHeader,
+    CardTitle,
+} from "../ui/card";
+import { Button } from "../ui/button";
+import { Popover, PopoverContent, PopoverTrigger } from "../ui/popover";
+import { Checkbox } from "../ui/checkbox";
+import { useState, useMemo } from "react";
 
 interface TrendsStatsProps {
     userId: string | undefined;
@@ -14,6 +31,44 @@ interface TrendsStatsProps {
 
 export default function TrendsStats({ userId }: TrendsStatsProps) {
     const { stats, loading, error } = useTrendsStats(userId);
+    const [selectedExerciseIds, setSelectedExerciseIds] = useState<string[]>(
+        []
+    );
+
+    // Sort exercises by number of data points (most done to least done)
+    const sortedExercises = useMemo(() => {
+        return [...stats.topExerciseProgress].sort(
+            (a, b) => b.dataPoints.length - a.dataPoints.length
+        );
+    }, [stats.topExerciseProgress]);
+
+    // Initialize selected exercises when data loads
+    useMemo(() => {
+        if (selectedExerciseIds.length === 0 && sortedExercises.length > 0) {
+            // Select top 6 by default
+            setSelectedExerciseIds(
+                sortedExercises.slice(0, 6).map((e) => e.exerciseId)
+            );
+        }
+    }, [sortedExercises, selectedExerciseIds.length]);
+
+    // Filter exercises based on selection
+    const filteredExercises = useMemo(() => {
+        if (selectedExerciseIds.length === 0) {
+            return sortedExercises.slice(0, 6);
+        }
+        return sortedExercises.filter((e) =>
+            selectedExerciseIds.includes(e.exerciseId)
+        );
+    }, [sortedExercises, selectedExerciseIds]);
+
+    const toggleExercise = (exerciseId: string) => {
+        setSelectedExerciseIds((prev) =>
+            prev.includes(exerciseId)
+                ? prev.filter((id) => id !== exerciseId)
+                : [...prev, exerciseId]
+        );
+    };
 
     if (loading) {
         return (
@@ -135,71 +190,269 @@ export default function TrendsStats({ userId }: TrendsStatsProps) {
             </div>
 
             {/* Exercise Progress Charts */}
-            <div className="bg-neutral-900 border border-neutral-800 rounded-lg p-6">
-                <div className="flex items-center gap-2 mb-4">
-                    <BarChart3 className="w-5 h-5 text-blue-400" />
-                    <h3 className="text-sm font-bold text-neutral-100 uppercase tracking-wider">
-                        Postęp ćwiczeń
-                    </h3>
+            <div>
+                <div className="flex items-center justify-between mb-6">
+                    <div className="flex items-center gap-2">
+                        <BarChart3 className="w-5 h-5 text-blue-400" />
+                        <h3 className="text-sm font-bold text-neutral-100 uppercase tracking-wider">
+                            Postęp ćwiczeń
+                        </h3>
+                    </div>
+                    {sortedExercises.length > 0 && (
+                        <Popover>
+                            <PopoverTrigger asChild>
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    className="bg-neutral-800 border-neutral-700 text-neutral-100 hover:bg-neutral-700 hover:text-neutral-100"
+                                >
+                                    <ChevronDown className="w-4 h-4 mr-2" />
+                                    Wybierz ćwiczenia (
+                                    {selectedExerciseIds.length})
+                                </Button>
+                            </PopoverTrigger>
+                            <PopoverContent
+                                className="w-80 bg-neutral-900 border-neutral-800 p-0"
+                                align="end"
+                            >
+                                <div className="p-4 border-b border-neutral-800">
+                                    <h4 className="text-sm font-semibold text-neutral-100">
+                                        Wybierz ćwiczenia
+                                    </h4>
+                                    <p className="text-xs text-neutral-400 mt-1">
+                                        Od najczęściej trenowanych
+                                    </p>
+                                </div>
+                                <div className="max-h-[300px] overflow-y-auto">
+                                    {sortedExercises.map((exercise) => (
+                                        <div
+                                            key={exercise.exerciseId}
+                                            className="flex items-center gap-3 p-3 hover:bg-neutral-800/50 cursor-pointer border-b border-neutral-800/50 last:border-0"
+                                            onClick={() =>
+                                                toggleExercise(
+                                                    exercise.exerciseId
+                                                )
+                                            }
+                                        >
+                                            <Checkbox
+                                                checked={selectedExerciseIds.includes(
+                                                    exercise.exerciseId
+                                                )}
+                                                onCheckedChange={() =>
+                                                    toggleExercise(
+                                                        exercise.exerciseId
+                                                    )
+                                                }
+                                                className="border-neutral-600 data-[state=checked]:bg-blue-500 data-[state=checked]:border-blue-500"
+                                            />
+                                            <div className="flex-1">
+                                                <p className="text-sm text-neutral-100">
+                                                    {exercise.exerciseName}
+                                                </p>
+                                                <p className="text-xs text-neutral-500">
+                                                    {exercise.dataPoints.length}{" "}
+                                                    sesji
+                                                </p>
+                                            </div>
+                                            {selectedExerciseIds.includes(
+                                                exercise.exerciseId
+                                            ) && (
+                                                <Check className="w-4 h-4 text-blue-500" />
+                                            )}
+                                        </div>
+                                    ))}
+                                </div>
+                            </PopoverContent>
+                        </Popover>
+                    )}
                 </div>
                 {stats.topExerciseProgress.length === 0 ? (
                     <p className="text-neutral-500 text-xs">Brak danych</p>
                 ) : (
-                    <div className="space-y-6">
-                        {stats.topExerciseProgress.map((exercise) => {
+                    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+                        {filteredExercises.map((exercise, index) => {
                             const minWeight = Math.min(
                                 ...exercise.dataPoints.map((d) => d.maxWeight)
                             );
                             const maxWeight = Math.max(
                                 ...exercise.dataPoints.map((d) => d.maxWeight)
                             );
-                            const range = maxWeight - minWeight || 1;
+                            const avgWeight =
+                                exercise.dataPoints.reduce(
+                                    (sum, d) => sum + d.maxWeight,
+                                    0
+                                ) / exercise.dataPoints.length;
+
+                            // Calculate trend
+                            const recentAvg =
+                                exercise.dataPoints
+                                    .slice(-3)
+                                    .reduce((sum, d) => sum + d.maxWeight, 0) /
+                                3;
+                            const oldAvg =
+                                exercise.dataPoints
+                                    .slice(0, 3)
+                                    .reduce((sum, d) => sum + d.maxWeight, 0) /
+                                3;
+                            const trendPercent =
+                                oldAvg > 0
+                                    ? ((recentAvg - oldAvg) / oldAvg) * 100
+                                    : 0;
+
+                            // Chart colors
+                            const chartColors = [
+                                "hsl(217, 91%, 60%)", // blue
+                                "hsl(25, 95%, 53%)", // orange
+                                "hsl(271, 91%, 65%)", // purple
+                                "hsl(142, 71%, 45%)", // green
+                                "hsl(338, 90%, 65%)", // pink
+                            ];
+
+                            // Create chart config for this exercise
+                            const chartConfig = {
+                                weight: {
+                                    label: "Ciężar",
+                                    color: chartColors[
+                                        index % chartColors.length
+                                    ],
+                                },
+                            };
+
+                            // Format data for recharts
+                            const chartData = exercise.dataPoints.map(
+                                (point) => ({
+                                    date: new Date(
+                                        point.date
+                                    ).toLocaleDateString("pl-PL", {
+                                        day: "numeric",
+                                        month: "short",
+                                    }),
+                                    weight: point.maxWeight,
+                                })
+                            );
 
                             return (
-                                <div key={exercise.exerciseId}>
-                                    <div className="flex items-center justify-between mb-3">
-                                        <h4 className="text-sm font-semibold text-neutral-100">
+                                <Card
+                                    key={exercise.exerciseId}
+                                    className="bg-neutral-900 border-neutral-800"
+                                >
+                                    <CardHeader className="pb-2">
+                                        <CardTitle className="text-base font-semibold text-neutral-100">
                                             {exercise.exerciseName}
-                                        </h4>
-                                        <span className="text-xs text-neutral-400">
-                                            {minWeight}kg → {maxWeight}kg
-                                        </span>
-                                    </div>
-                                    <div className="flex items-end gap-1 h-24">
-                                        {exercise.dataPoints.map(
-                                            (point, index) => {
-                                                const height =
-                                                    ((point.maxWeight -
-                                                        minWeight) /
-                                                        range) *
-                                                    100;
-                                                return (
-                                                    <div
-                                                        key={index}
-                                                        className="flex-1 flex flex-col items-center"
-                                                    >
-                                                        <div
-                                                            className="w-full bg-blue-500 rounded-t transition-all duration-300 hover:bg-blue-400"
-                                                            style={{
-                                                                height: `${Math.max(
-                                                                    height,
-                                                                    5
-                                                                )}%`,
-                                                            }}
-                                                            title={`${
-                                                                point.maxWeight
-                                                            }kg - ${new Date(
-                                                                point.date
-                                                            ).toLocaleDateString(
-                                                                "pl-PL"
-                                                            )}`}
+                                        </CardTitle>
+                                        <CardDescription className="text-xs text-neutral-400">
+                                            Średnia: {avgWeight.toFixed(1)} kg
+                                        </CardDescription>
+                                    </CardHeader>
+                                    <CardContent className="pb-2">
+                                        <ChartContainer
+                                            config={chartConfig}
+                                            className="h-[140px] w-full"
+                                        >
+                                            <LineChart
+                                                accessibilityLayer
+                                                data={chartData}
+                                                margin={{
+                                                    top: 20,
+                                                    left: 12,
+                                                    right: 12,
+                                                }}
+                                            >
+                                                <CartesianGrid
+                                                    vertical={false}
+                                                    stroke="hsl(var(--neutral-800))"
+                                                />
+                                                <XAxis
+                                                    dataKey="date"
+                                                    tickLine={false}
+                                                    axisLine={false}
+                                                    tickMargin={8}
+                                                    stroke="hsl(var(--neutral-600))"
+                                                    fontSize={11}
+                                                    angle={-20}
+                                                    textAnchor="end"
+                                                />
+                                                <ChartTooltip
+                                                    cursor={false}
+                                                    content={
+                                                        <ChartTooltipContent
+                                                            indicator="line"
+                                                            formatter={(
+                                                                value
+                                                            ) => `${value} kg`}
                                                         />
-                                                    </div>
-                                                );
-                                            }
-                                        )}
-                                    </div>
-                                </div>
+                                                    }
+                                                />
+                                                <Line
+                                                    dataKey="weight"
+                                                    type="natural"
+                                                    stroke="var(--color-weight)"
+                                                    strokeWidth={2}
+                                                    dot={{
+                                                        fill: "var(--color-weight)",
+                                                    }}
+                                                    activeDot={{
+                                                        r: 6,
+                                                    }}
+                                                >
+                                                    <LabelList
+                                                        position="top"
+                                                        offset={12}
+                                                        className="fill-neutral-300"
+                                                        fontSize={11}
+                                                        formatter={(
+                                                            value: number
+                                                        ) => `${value}kg`}
+                                                    />
+                                                </Line>
+                                            </LineChart>
+                                        </ChartContainer>
+                                    </CardContent>
+                                    <CardFooter className="pt-0 pb-4">
+                                        <div className="flex w-full items-start gap-2 text-xs">
+                                            <div className="grid gap-1">
+                                                <div className="flex items-center gap-2 leading-none font-medium text-neutral-300">
+                                                    {trendPercent > 0 ? (
+                                                        <>
+                                                            <TrendingUp className="h-3 w-3 text-green-500" />
+                                                            <span className="text-green-500">
+                                                                +
+                                                                {trendPercent.toFixed(
+                                                                    1
+                                                                )}
+                                                                %
+                                                            </span>
+                                                            <span className="text-neutral-400">
+                                                                ostatnie sesje
+                                                            </span>
+                                                        </>
+                                                    ) : trendPercent < 0 ? (
+                                                        <>
+                                                            <TrendingDown className="h-3 w-3 text-red-500" />
+                                                            <span className="text-red-500">
+                                                                {trendPercent.toFixed(
+                                                                    1
+                                                                )}
+                                                                %
+                                                            </span>
+                                                            <span className="text-neutral-400">
+                                                                ostatnie sesje
+                                                            </span>
+                                                        </>
+                                                    ) : (
+                                                        <span className="text-neutral-500">
+                                                            Stabilny trend
+                                                        </span>
+                                                    )}
+                                                </div>
+                                                <div className="text-neutral-500 leading-none">
+                                                    {minWeight}kg → {maxWeight}
+                                                    kg
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </CardFooter>
+                                </Card>
                             );
                         })}
                     </div>

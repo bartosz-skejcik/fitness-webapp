@@ -354,63 +354,64 @@ export default function NewTemplatePage() {
                                 Wybierz lub utwórz ćwiczenie
                             </h3>
 
-                            <div className="mb-3">
-                                <div className="flex gap-2 mb-2">
-                                    <input
-                                        type="text"
-                                        value={newExerciseName}
-                                        onChange={(e) =>
-                                            setNewExerciseName(e.target.value)
-                                        }
-                                        placeholder="Nazwa nowego ćwiczenia"
-                                        className="flex-1 px-3 py-2 bg-neutral-900 border border-neutral-700 text-neutral-100 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-xs placeholder:text-neutral-600"
-                                        onKeyPress={(e) =>
-                                            e.key === "Enter" &&
-                                            createNewExercise()
-                                        }
-                                    />
-                                    <select
-                                        value={newExerciseTarget}
-                                        onChange={(e) =>
-                                            setNewExerciseTarget(
-                                                e.target.value as TargetBodyPart
-                                            )
-                                        }
-                                        className="px-2 py-2 bg-neutral-900 border border-neutral-700 text-neutral-100 rounded-lg text-xs mr-2"
-                                    >
-                                        <option value="">Część ciała</option>
-                                        <option value="quads">Quads</option>
-                                        <option value="hamstrings">
-                                            Hamstrings
-                                        </option>
-                                        <option value="glutes">Glutes</option>
-                                        <option value="chest">Chest</option>
-                                        <option value="back">Back</option>
-                                        <option value="biceps">Biceps</option>
-                                        <option value="triceps">Triceps</option>
-                                        <option value="shoulders">
-                                            Shoulders
-                                        </option>
-                                        <option value="calves">Calves</option>
-                                        <option value="core">Core</option>
-                                        <option value="forearms">
-                                            Forearms
-                                        </option>
-                                        <option value="neck">Neck</option>
-                                        <option value="adductors">
-                                            Adductors
-                                        </option>
-                                        <option value="abductors">
-                                            Abductors
-                                        </option>
-                                    </select>
-                                    <button
-                                        onClick={createNewExercise}
-                                        className="bg-orange-500 text-white px-3 py-2 rounded-lg hover:bg-orange-600 transition-colors text-xs whitespace-nowrap"
-                                    >
-                                        Utwórz nowe
-                                    </button>
-                                </div>
+                            <div className="mb-3 space-y-2">
+                                <input
+                                    type="text"
+                                    value={newExerciseName}
+                                    onChange={(e) =>
+                                        setNewExerciseName(e.target.value)
+                                    }
+                                    placeholder="Nazwa nowego ćwiczenia"
+                                    className="w-full px-3 py-2 bg-neutral-900 border border-neutral-700 text-neutral-100 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-xs placeholder:text-neutral-600"
+                                    onKeyPress={(e) =>
+                                        e.key === "Enter" && createNewExercise()
+                                    }
+                                />
+                                <select
+                                    value={newExerciseTarget}
+                                    onChange={(e) =>
+                                        setNewExerciseTarget(
+                                            e.target.value as TargetBodyPart
+                                        )
+                                    }
+                                    className="w-full px-3 py-2 bg-neutral-900 border border-neutral-700 text-neutral-100 rounded-lg text-xs"
+                                >
+                                    <option value="">
+                                        Wybierz część ciała
+                                    </option>
+                                    <option value="quads">
+                                        Czworogłowe uda
+                                    </option>
+                                    <option value="hamstrings">
+                                        Dwugłowe uda
+                                    </option>
+                                    <option value="glutes">Pośladki</option>
+                                    <option value="chest">
+                                        Klatka piersiowa
+                                    </option>
+                                    <option value="back">Plecy</option>
+                                    <option value="biceps">Biceps</option>
+                                    <option value="triceps">Triceps</option>
+                                    <option value="shoulders">Barki</option>
+                                    <option value="calves">Łydki</option>
+                                    <option value="core">Brzuch</option>
+                                    <option value="forearms">
+                                        Przedramiona
+                                    </option>
+                                    <option value="neck">Szyja</option>
+                                    <option value="adductors">
+                                        Przywodziciele
+                                    </option>
+                                    <option value="abductors">
+                                        Odwodziciele
+                                    </option>
+                                </select>
+                                <button
+                                    onClick={createNewExercise}
+                                    className="w-full bg-orange-500 text-white px-3 py-2 rounded-lg hover:bg-orange-600 transition-colors text-xs"
+                                >
+                                    Utwórz nowe ćwiczenie
+                                </button>
                                 <input
                                     type="text"
                                     value={searchQuery}
