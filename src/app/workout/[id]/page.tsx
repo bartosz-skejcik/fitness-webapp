@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
-import { useRouter, useParams } from "next/navigation";
+import { useRouter, useParams, useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import {
     WorkoutSession,
@@ -34,6 +34,7 @@ export default function WorkoutSessionPage() {
     const { user } = useAuth();
     const router = useRouter();
     const params = useParams();
+    const searchParams = useSearchParams();
     const sessionId = params.id as string;
     const supabase = createClient();
 
@@ -49,6 +50,13 @@ export default function WorkoutSessionPage() {
     const [completing, setCompleting] = useState(false);
     const [showCancelConfirm, setShowCancelConfirm] = useState(false);
     const [cancelling, setCancelling] = useState(false);
+
+    // Helper function to update URL with current exercise index
+    const updateExerciseInUrl = (index: number) => {
+        const url = new URL(window.location.href);
+        url.searchParams.set("exercise", index.toString());
+        window.history.replaceState({}, "", url.toString());
+    };
 
     useEffect(() => {
         if (user && sessionId) {
@@ -146,19 +154,43 @@ export default function WorkoutSessionPage() {
 
             setExerciseLogs(logsWithSets as ExerciseLogWithDetails[]);
 
-            // Auto-select first incomplete exercise
-            const firstIncomplete = logsWithSets.find((log) =>
-                log.sets.some((set: SetLog) => !set.completed)
-            );
-            if (firstIncomplete) {
-                const index = logsWithSets.findIndex(
-                    (l) => l.id === firstIncomplete.id
+            // Check if there's an exercise index in URL params
+            const exerciseParam = searchParams.get("exercise");
+            const urlExerciseIndex = exerciseParam
+                ? parseInt(exerciseParam, 10)
+                : null;
+
+            // Use URL param if valid, otherwise auto-select first incomplete exercise
+            if (
+                urlExerciseIndex !== null &&
+                urlExerciseIndex >= 0 &&
+                urlExerciseIndex < logsWithSets.length
+            ) {
+                setCurrentExerciseIndex(urlExerciseIndex);
+                setSelectedExercise(
+                    logsWithSets[urlExerciseIndex] as ExerciseLogWithDetails
                 );
-                setCurrentExerciseIndex(index);
-                setSelectedExercise(firstIncomplete as ExerciseLogWithDetails);
-            } else if (logsWithSets.length > 0) {
-                setCurrentExerciseIndex(0);
-                setSelectedExercise(logsWithSets[0] as ExerciseLogWithDetails);
+            } else {
+                // Auto-select first incomplete exercise
+                const firstIncomplete = logsWithSets.find((log) =>
+                    log.sets.some((set: SetLog) => !set.completed)
+                );
+                if (firstIncomplete) {
+                    const index = logsWithSets.findIndex(
+                        (l) => l.id === firstIncomplete.id
+                    );
+                    setCurrentExerciseIndex(index);
+                    setSelectedExercise(
+                        firstIncomplete as ExerciseLogWithDetails
+                    );
+                    updateExerciseInUrl(index);
+                } else if (logsWithSets.length > 0) {
+                    setCurrentExerciseIndex(0);
+                    setSelectedExercise(
+                        logsWithSets[0] as ExerciseLogWithDetails
+                    );
+                    updateExerciseInUrl(0);
+                }
             }
         } catch (error) {
             console.error("Error fetching workout session:", error);
@@ -275,6 +307,7 @@ export default function WorkoutSessionPage() {
             const nextIndex = currentExerciseIndex + 1;
             setCurrentExerciseIndex(nextIndex);
             setSelectedExercise(exerciseLogs[nextIndex]);
+            updateExerciseInUrl(nextIndex);
         }
     }
 
@@ -283,6 +316,7 @@ export default function WorkoutSessionPage() {
             const prevIndex = currentExerciseIndex - 1;
             setCurrentExerciseIndex(prevIndex);
             setSelectedExercise(exerciseLogs[prevIndex]);
+            updateExerciseInUrl(prevIndex);
         }
     }
 
@@ -290,6 +324,7 @@ export default function WorkoutSessionPage() {
         setCurrentExerciseIndex(index);
         setSelectedExercise(exerciseLogs[index]);
         setShowExerciseList(false);
+        updateExerciseInUrl(index);
     }
 
     if (loading) {
