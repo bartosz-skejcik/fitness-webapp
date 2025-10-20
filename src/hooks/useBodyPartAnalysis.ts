@@ -46,7 +46,7 @@ export interface BodyPartAnalysisData {
 
 function getPolishBodyPartName(bodyPart: TargetBodyPart): string {
     const labels: Record<TargetBodyPart, string> = {
-        quads: "Czworogłowe",
+        quads: "Czworogłowe ud",
         hamstrings: "Dwugłowe ud",
         glutes: "Pośladki",
         chest: "Klatka",
@@ -203,7 +203,7 @@ export function useBodyPartAnalysis(userId: string | undefined) {
                     string
                 ][] = [
                     ["chest", "back", "Klatka vs Plecy"],
-                    ["quads", "hamstrings", "Czworogłowe vs Dwugłowe ud"],
+                    ["quads", "hamstrings", "Czworogłowe ud vs Dwugłowe ud"],
                     ["biceps", "triceps", "Biceps vs Triceps"],
                     [
                         "abductors",

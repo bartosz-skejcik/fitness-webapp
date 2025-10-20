@@ -274,7 +274,7 @@ export function useGoalsStats(userId: string | undefined) {
                         id: "quad-king",
                         title: "Król Nóg",
                         description:
-                            "Osiągnij 10,000kg objętości na czworogłowe",
+                            "Osiągnij 10,000kg objętości na Czworogłowe ud",
                         icon: "🦵",
                         unlocked:
                             (bodyPartStats.get("quads")?.volume || 0) >= 10000,

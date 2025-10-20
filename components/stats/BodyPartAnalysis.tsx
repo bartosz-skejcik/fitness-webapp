@@ -35,7 +35,7 @@ interface BodyPartAnalysisProps {
 }
 
 const targetBodyPartLabels: Record<TargetBodyPart, string> = {
-    quads: "Czworogłowe",
+    quads: "Czworogłowe ud",
     hamstrings: "Dwugłowe ud",
     glutes: "Pośladki",
     chest: "Klatka",

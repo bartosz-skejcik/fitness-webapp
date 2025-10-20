@@ -36,7 +36,7 @@ export default function StrengthStats({ userId }: StrengthStatsProps) {
     }
 
     const targetBodyPartLabels: Record<string, string> = {
-        quads: "Czworogłowe",
+        quads: "Czworogłowe ud",
         hamstrings: "Dwugłowe ud",
         glutes: "Pośladki",
         chest: "Klatka",
