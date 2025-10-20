@@ -642,14 +642,61 @@ function SetInput({
     previousSet,
     isUnilateral,
 }: SetInputProps) {
-    const [reps, setReps] = useState<number | string>(set.reps || "");
-    const [weight, setWeight] = useState<number | string>(set.weight || "");
-    const [rir, setRir] = useState<number | string>(
-        set.rir !== null && set.rir !== undefined && set.rir !== 0
-            ? set.rir
-            : ""
+    // Create a unique key for this set in localStorage
+    const storageKey = `workout_set_${set.id}`;
+
+    // Initialize state from localStorage if available, otherwise use set data
+    const getInitialValue = (key: string, defaultValue: number | string) => {
+        if (typeof window === "undefined") return defaultValue;
+        const stored = localStorage.getItem(`${storageKey}_${key}`);
+        return stored !== null ? stored : defaultValue;
+    };
+
+    const [reps, setReps] = useState<number | string>(() =>
+        getInitialValue("reps", set.reps || "")
     );
-    const [side, setSide] = useState<"left" | "right" | null>(set.side || null);
+    const [weight, setWeight] = useState<number | string>(() =>
+        getInitialValue("weight", set.weight || "")
+    );
+    const [rir, setRir] = useState<number | string>(() => {
+        const defaultRir =
+            set.rir !== null && set.rir !== undefined && set.rir !== 0
+                ? set.rir
+                : "";
+        return getInitialValue("rir", defaultRir);
+    });
+    const [side, setSide] = useState<"left" | "right" | null>(() => {
+        if (typeof window === "undefined") return set.side || null;
+        const stored = localStorage.getItem(`${storageKey}_side`);
+        return stored ? (stored as "left" | "right") : set.side || null;
+    });
+
+    // Save to localStorage whenever values change
+    useEffect(() => {
+        if (typeof window === "undefined") return;
+        if (reps !== "")
+            localStorage.setItem(`${storageKey}_reps`, String(reps));
+        else localStorage.removeItem(`${storageKey}_reps`);
+    }, [reps, storageKey]);
+
+    useEffect(() => {
+        if (typeof window === "undefined") return;
+        if (weight !== "")
+            localStorage.setItem(`${storageKey}_weight`, String(weight));
+        else localStorage.removeItem(`${storageKey}_weight`);
+    }, [weight, storageKey]);
+
+    useEffect(() => {
+        if (typeof window === "undefined") return;
+        if (rir !== "") localStorage.setItem(`${storageKey}_rir`, String(rir));
+        else localStorage.removeItem(`${storageKey}_rir`);
+    }, [rir, storageKey]);
+
+    useEffect(() => {
+        if (typeof window === "undefined") return;
+        if (side) localStorage.setItem(`${storageKey}_side`, side);
+        else localStorage.removeItem(`${storageKey}_side`);
+    }, [side, storageKey]);
 
     // Validate numeric input - allows digits, decimal point, and backspace
     const handleNumericInput = (
@@ -679,6 +726,14 @@ function SetInput({
             side: isUnilateral ? side : null,
             completed: true,
         });
+
+        // Clear localStorage after successful save
+        if (typeof window !== "undefined") {
+            localStorage.removeItem(`${storageKey}_reps`);
+            localStorage.removeItem(`${storageKey}_weight`);
+            localStorage.removeItem(`${storageKey}_rir`);
+            localStorage.removeItem(`${storageKey}_side`);
+        }
     };
 
     const handleUncomplete = () => {
