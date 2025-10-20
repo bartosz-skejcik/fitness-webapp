@@ -432,7 +432,7 @@ export default function WorkoutSessionPage() {
                                 <X className="w-5 h-5" />
                             </button>
                         </div>
-                        <div className="overflow-y-auto max-h-[calc(85vh-5rem)]">
+                        <div className="overflow-y-auto overflow-x-hidden max-h-[calc(85vh-5rem)]">
                             {exerciseLogs.map((log, idx) => {
                                 const completedSets = log.sets.filter(
                                     (s) => s.completed
@@ -447,17 +447,17 @@ export default function WorkoutSessionPage() {
                                         onClick={() =>
                                             selectExerciseFromList(idx)
                                         }
-                                        className={`w-full flex items-center justify-between p-5 border-b border-neutral-800 last:border-b-0 hover:bg-neutral-800/50 transition-all ${
+                                        className={`w-full flex items-center gap-4 p-5 border-b border-neutral-800 last:border-b-0 hover:bg-neutral-800/50 transition-all overflow-hidden border-l-4 ${
                                             isCurrent
-                                                ? "bg-neutral-800/70 border-l-4 border-l-orange-500"
-                                                : ""
+                                                ? "bg-neutral-800/70 !border-l-orange-500"
+                                                : "!border-l-transparent"
                                         }`}
                                     >
-                                        <div className="flex items-center gap-4">
+                                        <div className="flex items-center gap-4 flex-1 min-w-0 overflow-hidden">
                                             <div
-                                                className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm transition-all ${
+                                                className={`w-10 h-10 flex-shrink-0 rounded-full flex items-center justify-center font-bold text-sm transition-all ${
                                                     isComplete
-                                                        ? "bg-gradient-to-br from-orange-500 to-orange-600 text-white shadow-lg shadow-orange-500/30"
+                                                        ? "bg-gradient-to-br from-orange-500 to-orange-600 text-white"
                                                         : isCurrent
                                                         ? "bg-blue-500/20 text-blue-400 border-2 border-blue-500/50"
                                                         : "bg-neutral-800 text-neutral-500 border-2 border-neutral-700"
@@ -469,8 +469,8 @@ export default function WorkoutSessionPage() {
                                                     idx + 1
                                                 )}
                                             </div>
-                                            <div className="text-left">
-                                                <h3 className="font-semibold text-base text-neutral-100 mb-0.5">
+                                            <div className="text-left flex-1 min-w-0 overflow-hidden">
+                                                <h3 className="font-semibold text-base text-neutral-100 mb-0.5 truncate">
                                                     {log.exercise.name}
                                                 </h3>
                                                 <p className="text-xs text-neutral-500 font-medium">
@@ -481,7 +481,7 @@ export default function WorkoutSessionPage() {
                                                 </p>
                                             </div>
                                         </div>
-                                        <ChevronRight className="w-5 h-5 text-neutral-600" />
+                                        <ChevronRight className="w-5 h-5 text-neutral-600 flex-shrink-0 ml-auto" />
                                     </button>
                                 );
                             })}
