@@ -346,7 +346,7 @@ export default function WorkoutSessionPage() {
                     <button
                         key="cancel"
                         onClick={() => setShowCancelConfirm(true)}
-                        className="flex items-center gap-2 bg-red-900/30 text-red-400 px-3 py-1.5 rounded-lg hover:bg-red-900/50 transition-colors text-xs border border-red-800/30"
+                        className="flex items-center gap-2 bg-red-500/10 text-red-400 px-3 py-2 rounded-lg hover:bg-red-500/20 transition-all text-sm border border-red-500/20 font-medium"
                     >
                         <Trash2 className="w-4 h-4" />
                         <span className="hidden sm:inline">Anuluj</span>
@@ -354,7 +354,7 @@ export default function WorkoutSessionPage() {
                     <button
                         key="list"
                         onClick={() => setShowExerciseList(true)}
-                        className="flex items-center gap-2 bg-neutral-800 text-neutral-300 px-3 py-1.5 rounded-lg hover:bg-neutral-700 transition-colors text-xs"
+                        className="flex items-center gap-2 bg-neutral-800 text-neutral-300 px-3 py-2 rounded-lg hover:bg-neutral-700 transition-all text-sm border border-neutral-700 font-medium"
                     >
                         <List className="w-4 h-4" />
                         <span className="hidden sm:inline">Lista</span>
@@ -363,19 +363,19 @@ export default function WorkoutSessionPage() {
             />
 
             {/* Progress Bar */}
-            <div className="bg-neutral-900 border-b border-neutral-800 px-4 py-2">
+            <div className="bg-neutral-900 border-b border-neutral-800 px-4 py-4">
                 <div className="max-w-4xl mx-auto">
-                    <div className="flex items-center justify-between mb-1.5">
-                        <span className="text-xs text-neutral-400">
+                    <div className="flex items-center justify-between mb-2">
+                        <span className="text-xs font-bold text-neutral-400 uppercase tracking-wider">
                             Postęp treningu
                         </span>
-                        <span className="text-xs text-neutral-400">
-                            {completedExercises} / {exerciseLogs.length} ćwiczeń
+                        <span className="text-sm text-neutral-300 font-semibold">
+                            {completedExercises} / {exerciseLogs.length}
                         </span>
                     </div>
-                    <div className="h-2 bg-neutral-800 rounded-full overflow-hidden">
+                    <div className="h-2.5 bg-neutral-800 rounded-full overflow-hidden">
                         <div
-                            className="h-full bg-orange-500 transition-all duration-300"
+                            className="h-full bg-gradient-to-r from-orange-500 to-orange-400 transition-all duration-500 ease-out"
                             style={{ width: `${progressPercentage}%` }}
                         />
                     </div>
@@ -384,20 +384,20 @@ export default function WorkoutSessionPage() {
 
             {/* Exercise List Modal */}
             {showExerciseList && (
-                <div className="fixed inset-0 bg-neutral-950/95 z-50 flex items-center justify-center p-4">
-                    <div className="bg-neutral-900 rounded-lg max-w-2xl w-full max-h-[80vh] overflow-y-auto border border-neutral-800">
-                        <div className="sticky top-0 bg-neutral-900 border-b border-neutral-800 p-4 flex items-center justify-between">
-                            <h2 className="text-sm font-bold text-neutral-100">
-                                LISTA ĆWICZEŃ
+                <div className="fixed inset-0 bg-black/90 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
+                    <div className="bg-neutral-900 rounded-lg max-w-2xl w-full max-h-[85vh] overflow-hidden border border-neutral-800 shadow-2xl">
+                        <div className="sticky top-0 bg-neutral-900 border-b border-neutral-800 p-5 flex items-center justify-between">
+                            <h2 className="text-sm font-bold text-neutral-100 uppercase tracking-wider">
+                                Lista ćwiczeń
                             </h2>
                             <button
                                 onClick={() => setShowExerciseList(false)}
-                                className="text-neutral-400 hover:text-neutral-100"
+                                className="text-neutral-400 hover:text-neutral-100 transition-colors p-1 hover:bg-neutral-800 rounded"
                             >
                                 <X className="w-5 h-5" />
                             </button>
                         </div>
-                        <div>
+                        <div className="overflow-y-auto max-h-[calc(85vh-5rem)]">
                             {exerciseLogs.map((log, idx) => {
                                 const completedSets = log.sets.filter(
                                     (s) => s.completed
@@ -412,35 +412,41 @@ export default function WorkoutSessionPage() {
                                         onClick={() =>
                                             selectExerciseFromList(idx)
                                         }
-                                        className={`w-full flex items-center justify-between p-4 border-b last:border-b-0 hover:bg-neutral-800 transition-colors ${
-                                            isCurrent ? "bg-neutral-800" : ""
+                                        className={`w-full flex items-center justify-between p-5 border-b border-neutral-800 last:border-b-0 hover:bg-neutral-800/50 transition-all ${
+                                            isCurrent
+                                                ? "bg-neutral-800/70 border-l-4 border-l-orange-500"
+                                                : ""
                                         }`}
                                     >
-                                        <div className="flex items-center gap-3">
+                                        <div className="flex items-center gap-4">
                                             <div
-                                                className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs ${
+                                                className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm transition-all ${
                                                     isComplete
-                                                        ? "bg-orange-500 text-white"
-                                                        : "bg-neutral-800 text-neutral-400"
+                                                        ? "bg-gradient-to-br from-orange-500 to-orange-600 text-white shadow-lg shadow-orange-500/30"
+                                                        : isCurrent
+                                                        ? "bg-blue-500/20 text-blue-400 border-2 border-blue-500/50"
+                                                        : "bg-neutral-800 text-neutral-500 border-2 border-neutral-700"
                                                 }`}
                                             >
                                                 {isComplete ? (
-                                                    <Check className="w-4 h-4" />
+                                                    <Check className="w-5 h-5" />
                                                 ) : (
                                                     idx + 1
                                                 )}
                                             </div>
                                             <div className="text-left">
-                                                <h3 className="font-semibold text-sm text-neutral-100">
+                                                <h3 className="font-semibold text-base text-neutral-100 mb-0.5">
                                                     {log.exercise.name}
                                                 </h3>
-                                                <p className="text-xs text-neutral-500">
+                                                <p className="text-xs text-neutral-500 font-medium">
                                                     {completedSets}/{totalSets}{" "}
-                                                    serii
+                                                    {totalSets === 1
+                                                        ? "seria"
+                                                        : "serie"}
                                                 </p>
                                             </div>
                                         </div>
-                                        <ChevronRight className="w-4 h-4 text-neutral-600" />
+                                        <ChevronRight className="w-5 h-5 text-neutral-600" />
                                     </button>
                                 );
                             })}
@@ -451,34 +457,36 @@ export default function WorkoutSessionPage() {
 
             {/* Cancel Confirmation Modal */}
             {showCancelConfirm && (
-                <div className="fixed inset-0 bg-neutral-950/95 z-50 flex items-center justify-center p-4">
-                    <div className="bg-neutral-900 rounded-lg max-w-md w-full border border-neutral-800">
+                <div className="fixed inset-0 bg-black/90 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
+                    <div className="bg-neutral-900 rounded-lg max-w-md w-full border border-neutral-800 shadow-2xl">
                         <div className="p-6">
-                            <div className="flex items-center gap-3 mb-4">
-                                <div className="w-12 h-12 rounded-full bg-red-900/30 flex items-center justify-center">
+                            <div className="flex items-start gap-4 mb-4">
+                                <div className="w-12 h-12 rounded-full bg-red-500/10 flex items-center justify-center flex-shrink-0 border border-red-500/20">
                                     <Trash2 className="w-6 h-6 text-red-400" />
                                 </div>
-                                <h2 className="text-lg font-bold text-neutral-100">
-                                    Anulować trening?
-                                </h2>
+                                <div>
+                                    <h2 className="text-lg font-bold text-neutral-100 mb-2">
+                                        Anulować trening?
+                                    </h2>
+                                    <p className="text-sm text-neutral-400 leading-relaxed">
+                                        Wszystkie wprowadzone dane zostaną
+                                        bezpowrotnie usunięte. Tej operacji nie
+                                        można cofnąć.
+                                    </p>
+                                </div>
                             </div>
-                            <p className="text-neutral-400 mb-6">
-                                Czy na pewno chcesz anulować ten trening?
-                                Wszystkie wprowadzone dane zostaną usunięte. Tej
-                                operacji nie można cofnąć.
-                            </p>
-                            <div className="flex gap-3">
+                            <div className="flex gap-3 mt-6">
                                 <button
                                     onClick={() => setShowCancelConfirm(false)}
                                     disabled={cancelling}
-                                    className="flex-1 bg-neutral-800 text-neutral-300 py-3 rounded-lg hover:bg-neutral-700 transition-colors disabled:opacity-50 font-medium text-sm"
+                                    className="flex-1 bg-neutral-800 text-neutral-300 py-3 rounded-lg hover:bg-neutral-700 transition-all disabled:opacity-50 font-semibold text-sm border border-neutral-700"
                                 >
                                     Nie, kontynuuj
                                 </button>
                                 <button
                                     onClick={cancelWorkout}
                                     disabled={cancelling}
-                                    className="flex-1 bg-red-600 text-white py-3 rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50 font-medium text-sm flex items-center justify-center gap-2"
+                                    className="flex-1 bg-red-600 text-white py-3 rounded-lg hover:bg-red-700 transition-all disabled:opacity-50 font-semibold text-sm flex items-center justify-center gap-2 shadow-lg shadow-red-600/20"
                                 >
                                     {cancelling ? (
                                         <>
@@ -499,20 +507,20 @@ export default function WorkoutSessionPage() {
             )}
 
             {/* Main Content */}
-            <main className="flex-1 max-w-4xl mx-auto w-full px-4 py-6">
+            <main className="flex-1 max-w-4xl mx-auto w-full px-4 py-6 pb-24">
                 {selectedExercise && (
-                    <div className="bg-neutral-900/50 border border-neutral-800 rounded-lg p-4">
-                        <div className="mb-4">
-                            <h2 className="text-lg font-bold text-neutral-100 mb-1">
+                    <div className="bg-neutral-900 border border-neutral-800 rounded-lg overflow-hidden">
+                        <div className="bg-gradient-to-r from-neutral-800 to-neutral-900 p-5 border-b border-neutral-800">
+                            <h2 className="text-xl font-bold text-neutral-100 mb-1">
                                 {selectedExercise.exercise.name}
                             </h2>
-                            <p className="text-xs text-neutral-500">
+                            <p className="text-xs text-neutral-500 font-medium uppercase tracking-wider">
                                 Ćwiczenie {currentExerciseIndex + 1} z{" "}
                                 {exerciseLogs.length}
                             </p>
                         </div>
 
-                        <div className="space-y-3">
+                        <div className="p-5 space-y-4">
                             {selectedExercise.sets.map((set, idx) => (
                                 <SetInput
                                     key={set.id}
@@ -535,22 +543,22 @@ export default function WorkoutSessionPage() {
             </main>
 
             {/* Bottom Navigation */}
-            <div className="sticky bottom-0 bg-neutral-900 border-t border-neutral-800 px-4 py-3">
+            <div className="fixed bottom-0 left-0 right-0 bg-neutral-900 border-t border-neutral-800 px-4 py-4 shadow-2xl">
                 <div className="max-w-4xl mx-auto">
                     {allSetsCompleted ? (
                         <button
                             onClick={completeWorkout}
                             disabled={completing}
-                            className="w-full flex items-center justify-center gap-2 bg-orange-500 text-white py-3 rounded-lg hover:bg-orange-600 transition-colors disabled:opacity-50 font-semibold text-sm"
+                            className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-orange-500 to-orange-600 text-white py-4 rounded-lg hover:from-orange-600 hover:to-orange-700 transition-all disabled:opacity-50 font-bold text-base shadow-lg shadow-orange-500/30"
                         >
                             {completing ? (
                                 <>
-                                    <Loader2 className="w-5 h-5 animate-spin" />
+                                    <Loader2 className="w-6 h-6 animate-spin" />
                                     Zapisywanie...
                                 </>
                             ) : (
                                 <>
-                                    <Trophy className="w-5 h-5" />
+                                    <Trophy className="w-6 h-6 fill-current" />
                                     Zakończ trening
                                 </>
                             )}
@@ -560,7 +568,7 @@ export default function WorkoutSessionPage() {
                             <button
                                 onClick={goToPreviousExercise}
                                 disabled={currentExerciseIndex === 0}
-                                className="flex-1 flex items-center justify-center gap-2 bg-neutral-800 text-neutral-300 py-3 rounded-lg hover:bg-neutral-700 transition-colors disabled:opacity-30 disabled:cursor-not-allowed font-medium text-sm"
+                                className="flex-1 flex items-center justify-center gap-2 bg-neutral-800 text-neutral-300 py-3.5 rounded-lg hover:bg-neutral-700 transition-all disabled:opacity-30 disabled:cursor-not-allowed font-semibold text-sm border border-neutral-700"
                             >
                                 <ChevronLeft className="w-5 h-5" />
                                 Poprzednie
@@ -571,7 +579,7 @@ export default function WorkoutSessionPage() {
                                     currentExerciseIndex ===
                                     exerciseLogs.length - 1
                                 }
-                                className="flex-1 flex items-center justify-center gap-2 bg-orange-500 text-white py-3 rounded-lg hover:bg-orange-600 transition-colors disabled:opacity-30 disabled:cursor-not-allowed font-medium text-sm"
+                                className="flex-1 flex items-center justify-center gap-2 bg-orange-500 text-white py-3.5 rounded-lg hover:bg-orange-600 transition-all disabled:opacity-30 disabled:cursor-not-allowed font-semibold text-sm shadow-lg shadow-orange-500/20"
                             >
                                 Następne
                                 <ChevronRight className="w-5 h-5" />
@@ -601,8 +609,32 @@ function SetInput({
 }: SetInputProps) {
     const [reps, setReps] = useState<number | string>(set.reps || "");
     const [weight, setWeight] = useState<number | string>(set.weight || "");
-    const [rir, setRir] = useState<number | string>(set.rir ?? "");
+    const [rir, setRir] = useState<number | string>(
+        set.rir !== null && set.rir !== undefined && set.rir !== 0
+            ? set.rir
+            : ""
+    );
     const [side, setSide] = useState<"left" | "right" | null>(set.side || null);
+
+    // Validate numeric input - allows digits, decimal point, and backspace
+    const handleNumericInput = (
+        value: string,
+        setter: (value: string) => void,
+        allowDecimal = false
+    ) => {
+        // Allow empty string
+        if (value === "") {
+            setter("");
+            return;
+        }
+
+        // Regex: optional digits, optional single decimal point, optional digits after decimal
+        const regex = allowDecimal ? /^\d*\.?\d*$/ : /^\d*$/;
+
+        if (regex.test(value)) {
+            setter(value);
+        }
+    };
 
     const handleComplete = () => {
         onUpdate({
@@ -620,43 +652,52 @@ function SetInput({
 
     if (set.completed) {
         return (
-            <div className="bg-orange-500/10 border-2 border-orange-500/20 rounded-lg p-4">
-                <div className="flex items-center justify-between mb-2">
+            <div className="bg-gradient-to-br from-orange-500/10 to-orange-600/5 border-2 border-orange-500/30 rounded-lg p-4 shadow-lg shadow-orange-500/5">
+                <div className="flex items-center justify-between mb-3">
                     <div className="flex items-center gap-2">
+                        <div className="w-6 h-6 rounded-full bg-orange-500/20 flex items-center justify-center">
+                            <Check className="w-4 h-4 text-orange-400" />
+                        </div>
                         <span className="font-bold text-orange-400">
                             Seria {setNumber}
                         </span>
                         {isUnilateral && set.side && (
-                            <span className="text-xs px-2 py-0.5 rounded bg-orange-500/20 text-orange-300">
+                            <span className="text-xs px-2 py-0.5 rounded bg-orange-500/20 text-orange-300 font-medium">
                                 {set.side === "left" ? "Lewa" : "Prawa"}
                             </span>
                         )}
                     </div>
                     <button
                         onClick={handleUncomplete}
-                        className="text-orange-400 hover:text-green-700 text-sm font-medium"
+                        className="text-orange-400 hover:text-orange-300 text-sm font-semibold transition-colors"
                     >
                         Edytuj
                     </button>
                 </div>
-                <div className="grid grid-cols-3 gap-4 text-center">
-                    <div>
-                        <p className="text-sm font-bold text-orange-400">
+                <div className="grid grid-cols-3 gap-4">
+                    <div className="bg-neutral-900/50 rounded-lg p-3 text-center border border-orange-500/20">
+                        <p className="text-lg font-bold text-orange-400 mb-0.5">
                             {set.reps}
                         </p>
-                        <p className="text-xs text-orange-400">powtórzeń</p>
+                        <p className="text-xs text-orange-400/80 font-medium">
+                            powtórzeń
+                        </p>
                     </div>
-                    <div>
-                        <p className="text-sm font-bold text-orange-400">
+                    <div className="bg-neutral-900/50 rounded-lg p-3 text-center border border-orange-500/20">
+                        <p className="text-lg font-bold text-orange-400 mb-0.5">
                             {set.weight} kg
                         </p>
-                        <p className="text-xs text-orange-400">ciężar</p>
+                        <p className="text-xs text-orange-400/80 font-medium">
+                            ciężar
+                        </p>
                     </div>
-                    <div>
-                        <p className="text-sm font-bold text-orange-400">
+                    <div className="bg-neutral-900/50 rounded-lg p-3 text-center border border-orange-500/20">
+                        <p className="text-lg font-bold text-orange-400 mb-0.5">
                             {set.rir ?? "-"}
                         </p>
-                        <p className="text-xs text-orange-400">RIR</p>
+                        <p className="text-xs text-orange-400/80 font-medium">
+                            RIR
+                        </p>
                     </div>
                 </div>
             </div>
@@ -664,47 +705,54 @@ function SetInput({
     }
 
     return (
-        <div className="bg-blue-500/10 border-2 border-blue-500/20 rounded-lg p-4">
+        <div className="bg-gradient-to-br from-blue-500/10 to-blue-600/5 border-2 border-blue-500/30 rounded-lg p-4 shadow-lg shadow-blue-500/5">
             <div className="mb-4">
-                <span className="font-bold text-blue-400 text-md">
-                    Seria {setNumber}
-                </span>
+                <div className="flex items-center gap-2 mb-3">
+                    <div className="w-6 h-6 rounded-full bg-blue-500/20 flex items-center justify-center border border-blue-500/30">
+                        <span className="text-xs font-bold text-blue-400">
+                            {setNumber}
+                        </span>
+                    </div>
+                    <span className="font-bold text-blue-400">
+                        Seria {setNumber}
+                    </span>
+                </div>
                 {previousSet && (
-                    <div className="mt-2 bg-neutral-900/50 rounded-lg p-2 border border-neutral-800">
-                        <div className="flex items-center justify-between mb-1.5">
-                            <p className="text-xs text-neutral-500">
+                    <div className="bg-neutral-900/70 rounded-lg p-3 border border-neutral-800">
+                        <div className="flex items-center justify-between mb-2">
+                            <p className="text-xs font-bold text-neutral-400 uppercase tracking-wider">
                                 Ostatnio:
                             </p>
                             {isUnilateral && previousSet.side && (
-                                <span className="text-xs px-1.5 py-0.5 rounded bg-neutral-800 text-neutral-400">
+                                <span className="text-xs px-2 py-0.5 rounded bg-neutral-800 text-neutral-400 font-medium border border-neutral-700">
                                     {previousSet.side === "left"
                                         ? "Lewa"
                                         : "Prawa"}
                                 </span>
                             )}
                         </div>
-                        <div className="grid grid-cols-3 gap-2 text-center">
-                            <div>
-                                <p className="text-xs font-bold text-neutral-300">
+                        <div className="grid grid-cols-3 gap-2">
+                            <div className="text-center">
+                                <p className="text-sm font-bold text-neutral-200">
                                     {previousSet.reps}
                                 </p>
-                                <p className="text-[10px] text-neutral-500">
+                                <p className="text-[10px] text-neutral-500 uppercase tracking-wider">
                                     Powtórzenia
                                 </p>
                             </div>
-                            <div>
-                                <p className="text-xs font-bold text-neutral-300">
+                            <div className="text-center">
+                                <p className="text-sm font-bold text-neutral-200">
                                     {previousSet.weight} kg
                                 </p>
-                                <p className="text-[10px] text-neutral-500">
+                                <p className="text-[10px] text-neutral-500 uppercase tracking-wider">
                                     Ciężar
                                 </p>
                             </div>
-                            <div>
-                                <p className="text-xs font-bold text-neutral-300">
+                            <div className="text-center">
+                                <p className="text-sm font-bold text-neutral-200">
                                     {previousSet.rir ?? "-"}
                                 </p>
-                                <p className="text-[10px] text-neutral-500">
+                                <p className="text-[10px] text-neutral-500 uppercase tracking-wider">
                                     RIR
                                 </p>
                             </div>
@@ -715,17 +763,17 @@ function SetInput({
 
             {isUnilateral && (
                 <div className="mb-4">
-                    <label className="block text-xs font-medium text-neutral-300 mb-2">
+                    <label className="block text-xs font-bold text-neutral-300 mb-2 uppercase tracking-wider">
                         Która strona?
                     </label>
-                    <div className="grid grid-cols-2 gap-2">
+                    <div className="grid grid-cols-2 gap-3">
                         <button
                             type="button"
                             onClick={() => setSide("left")}
-                            className={`px-3 py-2 rounded-lg border-2 transition-all text-sm font-medium ${
+                            className={`px-4 py-3 rounded-lg border-2 transition-all text-sm font-semibold ${
                                 side === "left"
-                                    ? "border-blue-500 bg-blue-500/20 text-blue-300"
-                                    : "border-neutral-700 bg-neutral-800/50 text-neutral-400 hover:border-neutral-600"
+                                    ? "border-blue-500 bg-blue-500/20 text-blue-300 shadow-lg shadow-blue-500/20"
+                                    : "border-neutral-700 bg-neutral-800/50 text-neutral-400 hover:border-neutral-600 hover:bg-neutral-800"
                             }`}
                         >
                             👈 Lewa
@@ -733,10 +781,10 @@ function SetInput({
                         <button
                             type="button"
                             onClick={() => setSide("right")}
-                            className={`px-3 py-2 rounded-lg border-2 transition-all text-sm font-medium ${
+                            className={`px-4 py-3 rounded-lg border-2 transition-all text-sm font-semibold ${
                                 side === "right"
-                                    ? "border-blue-500 bg-blue-500/20 text-blue-300"
-                                    : "border-neutral-700 bg-neutral-800/50 text-neutral-400 hover:border-neutral-600"
+                                    ? "border-blue-500 bg-blue-500/20 text-blue-300 shadow-lg shadow-blue-500/20"
+                                    : "border-neutral-700 bg-neutral-800/50 text-neutral-400 hover:border-neutral-600 hover:bg-neutral-800"
                             }`}
                         >
                             Prawa 👉
@@ -747,21 +795,23 @@ function SetInput({
 
             <div className="grid grid-cols-3 gap-3 mb-4">
                 <div>
-                    <label className="block text-xs font-medium text-neutral-300 mb-1">
+                    <label className="block text-xs font-bold text-neutral-300 mb-2 uppercase tracking-wider">
                         Powtórzenia
                     </label>
                     <input
                         type="text"
                         inputMode="numeric"
                         value={reps}
-                        onChange={(e) => setReps(Number(e.target.value) || 0)}
-                        className="w-full px-3 py-3 text-center text-sm font-bold border-2 border-neutral-700 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-neutral-200"
+                        onChange={(e) =>
+                            handleNumericInput(e.target.value, setReps, false)
+                        }
+                        className="w-full px-3 py-3.5 text-center text-base font-bold border-2 border-neutral-700 bg-neutral-800 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-neutral-100 transition-all placeholder:text-neutral-600"
                         placeholder="0"
                     />
                 </div>
 
                 <div>
-                    <label className="block text-xs font-medium text-neutral-300 mb-1">
+                    <label className="block text-xs font-bold text-neutral-300 mb-2 uppercase tracking-wider">
                         Ciężar (kg)
                     </label>
                     <input
@@ -769,22 +819,26 @@ function SetInput({
                         inputMode="decimal"
                         step="0.5"
                         value={weight}
-                        onChange={(e) => setWeight(Number(e.target.value) || 0)}
-                        className="w-full px-3 py-3 text-center text-sm font-bold border-2 border-neutral-700 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-neutral-200"
+                        onChange={(e) =>
+                            handleNumericInput(e.target.value, setWeight, true)
+                        }
+                        className="w-full px-3 py-3.5 text-center text-base font-bold border-2 border-neutral-700 bg-neutral-800 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-neutral-100 transition-all placeholder:text-neutral-600"
                         placeholder="0"
                     />
                 </div>
 
                 <div>
-                    <label className="block text-xs font-medium text-neutral-300 mb-1">
+                    <label className="block text-xs font-bold text-neutral-300 mb-2 uppercase tracking-wider">
                         RIR
                     </label>
                     <input
                         type="text"
-                        inputMode="numeric"
+                        inputMode="decimal"
                         value={rir}
-                        onChange={(e) => setRir(Number(e.target.value) || 0)}
-                        className="w-full px-3 py-3 text-center text-sm font-bold border-2 border-neutral-700 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-neutral-200"
+                        onChange={(e) =>
+                            handleNumericInput(e.target.value, setRir, true)
+                        }
+                        className="w-full px-3 py-3.5 text-center text-base font-bold border-2 border-neutral-700 bg-neutral-800 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-neutral-100 transition-all placeholder:text-neutral-600"
                         placeholder="0"
                         min="0"
                         max="10"
@@ -795,7 +849,7 @@ function SetInput({
             <button
                 onClick={handleComplete}
                 disabled={isUnilateral && !side}
-                className="w-full bg-orange-500 text-white py-3 rounded-lg font-semibold hover:bg-orange-600 transition-colors flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-full bg-gradient-to-r from-orange-500 to-orange-600 text-white py-3.5 rounded-lg font-bold hover:from-orange-600 hover:to-orange-700 transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-orange-500/20"
             >
                 <Check className="w-5 h-5" />
                 {isUnilateral && !side ? "Wybierz stronę" : "Potwierdź serię"}
