@@ -216,14 +216,14 @@ export default function NewWorkoutPage() {
             <main className="max-w-4xl mx-auto px-4 py-6 pb-24">
                 {/* Exercise Recommendations */}
                 {recommendations.length > 0 && (
-                    <div className="bg-gradient-to-br from-yellow-500/10 to-yellow-600/5 border border-yellow-500/20 rounded-lg p-5 mb-6">
+                    <div className="py-5 mb-6">
                         <div className="flex items-center gap-2 mb-3">
-                            <Lightbulb className="w-5 h-5 text-yellow-400" />
-                            <h2 className="text-sm font-bold text-yellow-400 uppercase tracking-wider">
+                            <Lightbulb className="w-5 h-5 text-neutral-200" />
+                            <h2 className="text-sm font-bold text-neutral-200 uppercase tracking-wider">
                                 Rekomendacje ćwiczeń
                             </h2>
                         </div>
-                        <p className="text-sm text-yellow-200/80 mb-4">
+                        <p className="text-sm text-neutral-200/80 mb-4">
                             Na podstawie analizy Twoich treningów, zalecamy
                             skupić się na tych partiach:
                         </p>
@@ -231,13 +231,17 @@ export default function NewWorkoutPage() {
                             {recommendations.map((rec, idx) => (
                                 <div
                                     key={idx}
-                                    className={`bg-neutral-900/50 border rounded-lg p-4 ${
+                                    className={`bg-gradient-to-br from-neutral-800/60 via-neutral-900/40 to-neutral-950/20 border rounded-lg p-4 shadow-sm ${
                                         rec.priority === "high"
                                             ? "border-red-500/30"
                                             : rec.priority === "moderate"
                                             ? "border-yellow-500/30"
                                             : "border-blue-500/30"
                                     }`}
+                                    style={{
+                                        boxShadow:
+                                            "inset 0 1px 0 rgba(255,255,255,0.03), 0 6px 20px rgba(0,0,0,0.45)",
+                                    }}
                                 >
                                     <div className="flex items-start justify-between mb-2">
                                         <div>
@@ -281,7 +285,7 @@ export default function NewWorkoutPage() {
                                                         ]);
                                                     }
                                                 }}
-                                                className="text-xs px-3 py-1.5 bg-neutral-800 hover:bg-neutral-700 text-neutral-300 rounded border border-neutral-700 flex items-center gap-1.5 transition-colors"
+                                                className="text-xs px-3 py-1.5 bg-neutral-800/60 hover:bg-neutral-700/60 text-neutral-300 rounded border border-neutral-700/30 flex items-center gap-1.5 transition-colors backdrop-blur-sm shadow-[inset_0_1px_0_rgba(255,255,255,0.02)]"
                                             >
                                                 <Plus className="w-3 h-3" />
                                                 {ex.name}

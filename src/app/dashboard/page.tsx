@@ -286,7 +286,13 @@ export default function DashboardPage() {
 
                 {/* Stats Tiles */}
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
-                    <div className="bg-neutral-900 border border-neutral-800 rounded-lg p-4">
+                    <div
+                        className="bg-gradient-to-br from-neutral-800/60 via-neutral-900/40 to-neutral-950/20 border border-neutral-800 rounded-lg p-4 shadow-sm"
+                        style={{
+                            boxShadow:
+                                "inset 0 1px 0 rgba(255,255,255,0.03), 0 6px 18px rgba(0,0,0,0.45)",
+                        }}
+                    >
                         <div className="flex items-center gap-2 mb-2">
                             <Calendar className="w-4 h-4 text-blue-400" />
                             <span className="text-xs text-neutral-400">
@@ -301,7 +307,13 @@ export default function DashboardPage() {
                         </p>
                     </div>
 
-                    <div className="bg-neutral-900 border border-neutral-800 rounded-lg p-4">
+                    <div
+                        className="bg-gradient-to-br from-neutral-800/60 via-neutral-900/40 to-neutral-950/20 border border-neutral-800 rounded-lg p-4 shadow-sm"
+                        style={{
+                            boxShadow:
+                                "inset 0 1px 0 rgba(255,255,255,0.03), 0 6px 18px rgba(0,0,0,0.45)",
+                        }}
+                    >
                         <div className="flex items-center gap-2 mb-2">
                             <Target className="w-4 h-4 text-orange-500" />
                             <span className="text-xs text-neutral-400">
@@ -316,7 +328,13 @@ export default function DashboardPage() {
                         </p>
                     </div>
 
-                    <div className="bg-neutral-900 border border-neutral-800 rounded-lg p-4">
+                    <div
+                        className="bg-gradient-to-br from-neutral-800/60 via-neutral-900/40 to-neutral-950/20 border border-neutral-800 rounded-lg p-4 shadow-sm"
+                        style={{
+                            boxShadow:
+                                "inset 0 1px 0 rgba(255,255,255,0.03), 0 6px 18px rgba(0,0,0,0.45)",
+                        }}
+                    >
                         <div className="flex items-center gap-2 mb-2">
                             <Dumbbell className="w-4 h-4 text-blue-400" />
                             <span className="text-xs text-neutral-400">
@@ -333,7 +351,13 @@ export default function DashboardPage() {
                         </p>
                     </div>
 
-                    <div className="bg-neutral-900 border border-neutral-800 rounded-lg p-4">
+                    <div
+                        className="bg-gradient-to-br from-neutral-800/60 via-neutral-900/40 to-neutral-950/20 border border-neutral-800 rounded-lg p-4 shadow-sm"
+                        style={{
+                            boxShadow:
+                                "inset 0 1px 0 rgba(255,255,255,0.03), 0 6px 18px rgba(0,0,0,0.45)",
+                        }}
+                    >
                         <div className="flex items-center gap-2 mb-2">
                             <Flame className="w-4 h-4 text-orange-500" />
                             <span className="text-xs text-neutral-400">
