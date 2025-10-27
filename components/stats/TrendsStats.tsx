@@ -92,7 +92,10 @@ export default function TrendsStats({ userId }: TrendsStatsProps) {
         <div className="space-y-6">
             {/* Best Performance Time/Day */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="bg-gradient-to-br from-blue-500/10 to-blue-500/5 border border-blue-500/20 rounded-lg p-6">
+                <Card
+                    metal
+                    className="p-6 bg-gradient-to-br from-blue-500/10 via-blue-500/5 to-blue-500/10 border-blue-500/20"
+                >
                     <div className="flex items-center gap-3 mb-3">
                         <div className="w-10 h-10 rounded-full bg-blue-500/20 flex items-center justify-center">
                             <Calendar className="w-5 h-5 text-blue-400" />
@@ -109,9 +112,12 @@ export default function TrendsStats({ userId }: TrendsStatsProps) {
                     <p className="text-xs text-neutral-500 mt-2">
                         Najbardziej produktywny dzień tygodnia
                     </p>
-                </div>
+                </Card>
 
-                <div className="bg-gradient-to-br from-orange-500/10 to-orange-500/5 border border-orange-500/20 rounded-lg p-6">
+                <Card
+                    metal
+                    className="p-6 bg-gradient-to-br from-orange-500/10 via-orange-500/5 to-orange-500/10 border-orange-500/20"
+                >
                     <div className="flex items-center gap-3 mb-3">
                         <div className="w-10 h-10 rounded-full bg-orange-500/20 flex items-center justify-center">
                             <Clock className="w-5 h-5 text-orange-400" />
@@ -128,11 +134,11 @@ export default function TrendsStats({ userId }: TrendsStatsProps) {
                     <p className="text-xs text-neutral-500 mt-2">
                         Najbardziej produktywna pora dnia
                     </p>
-                </div>
+                </Card>
             </div>
 
             {/* Weekly Progress */}
-            <div className="bg-neutral-900 border border-neutral-800 rounded-lg p-6">
+            <Card metal className="p-6">
                 <div className="flex items-center gap-2 mb-4">
                     <TrendingUp className="w-5 h-5 text-orange-500" />
                     <h3 className="text-sm font-bold text-neutral-100 uppercase tracking-wider">
@@ -187,7 +193,7 @@ export default function TrendsStats({ userId }: TrendsStatsProps) {
                         ))}
                     </div>
                 )}
-            </div>
+            </Card>
 
             {/* Exercise Progress Charts */}
             <div>
@@ -332,10 +338,7 @@ export default function TrendsStats({ userId }: TrendsStatsProps) {
                             );
 
                             return (
-                                <Card
-                                    key={exercise.exerciseId}
-                                    className="bg-neutral-900 border-neutral-800"
-                                >
+                                <Card key={exercise.exerciseId} metal>
                                     <CardHeader className="pb-2">
                                         <CardTitle className="text-base font-semibold text-neutral-100">
                                             {exercise.exerciseName}
@@ -460,7 +463,7 @@ export default function TrendsStats({ userId }: TrendsStatsProps) {
             </div>
 
             {/* Workout Frequency Heatmap */}
-            <div className="bg-neutral-900 border border-neutral-800 rounded-lg p-6">
+            <Card metal className="p-6">
                 <div className="flex items-center gap-2 mb-4">
                     <Activity className="w-5 h-5 text-orange-500" />
                     <h3 className="text-sm font-bold text-neutral-100 uppercase tracking-wider">
@@ -525,7 +528,7 @@ export default function TrendsStats({ userId }: TrendsStatsProps) {
                         </div>
                     </div>
                 )}
-            </div>
+            </Card>
         </div>
     );
 }

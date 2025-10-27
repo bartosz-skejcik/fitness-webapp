@@ -99,7 +99,7 @@ export default function BodyPartAnalysis({ userId }: BodyPartAnalysisProps) {
         <div className="space-y-6">
             {/* Smart Recommendations */}
             {data.recommendations.length > 0 && (
-                <div className="bg-neutral-900 border border-neutral-800 rounded-lg p-6">
+                <Card metal className="p-6">
                     <div className="flex items-center gap-2 mb-4">
                         <Lightbulb className="w-5 h-5 text-yellow-500" />
                         <h3 className="text-sm font-bold text-neutral-100 uppercase tracking-wider">
@@ -119,12 +119,12 @@ export default function BodyPartAnalysis({ userId }: BodyPartAnalysisProps) {
                             </div>
                         ))}
                     </div>
-                </div>
+                </Card>
             )}
 
             {/* Muscle Imbalances */}
             {data.imbalances.length > 0 && (
-                <div className="bg-neutral-900 border border-neutral-800 rounded-lg p-6">
+                <Card metal className="p-6">
                     <div className="flex items-center gap-2 mb-4">
                         <Scale className="w-5 h-5 text-orange-500" />
                         <h3 className="text-sm font-bold text-neutral-100 uppercase tracking-wider">
@@ -242,12 +242,12 @@ export default function BodyPartAnalysis({ userId }: BodyPartAnalysisProps) {
                             </div>
                         ))}
                     </div>
-                </div>
+                </Card>
             )}
 
             {/* Undertrained Body Parts */}
             {data.undertrainedParts.length > 0 && (
-                <div className="bg-neutral-900 border border-neutral-800 rounded-lg p-6">
+                <Card metal className="p-6">
                     <div className="flex items-center gap-2 mb-4">
                         <TrendingDown className="w-5 h-5 text-red-500" />
                         <h3 className="text-sm font-bold text-neutral-100 uppercase tracking-wider">
@@ -299,12 +299,12 @@ export default function BodyPartAnalysis({ userId }: BodyPartAnalysisProps) {
                             </div>
                         ))}
                     </div>
-                </div>
+                </Card>
             )}
 
             {/* Volume Distribution */}
             {data.volumeDistribution.length > 0 && (
-                <div className="bg-neutral-900 border border-neutral-800 rounded-lg p-6">
+                <Card metal className="p-6">
                     <div className="flex items-center gap-2 mb-4">
                         <PieChart className="w-5 h-5 text-blue-500" />
                         <h3 className="text-sm font-bold text-neutral-100 uppercase tracking-wider">
@@ -348,7 +348,7 @@ export default function BodyPartAnalysis({ userId }: BodyPartAnalysisProps) {
                             </div>
                         ))}
                     </div>
-                </div>
+                </Card>
             )}
 
             {/* 12-Week Progress History */}
@@ -417,10 +417,7 @@ export default function BodyPartAnalysis({ userId }: BodyPartAnalysisProps) {
                                 );
 
                                 return (
-                                    <Card
-                                        key={history.bodyPart}
-                                        className="bg-neutral-900 border-neutral-800"
-                                    >
+                                    <Card key={history.bodyPart} metal>
                                         <CardHeader className="pb-2">
                                             <CardTitle className="text-base font-semibold text-neutral-100">
                                                 {
@@ -565,7 +562,7 @@ export default function BodyPartAnalysis({ userId }: BodyPartAnalysisProps) {
 
             {/* Body Part Comparison Tool */}
             {data.volumeDistribution.length > 0 && (
-                <div className="bg-neutral-900 border border-neutral-800 rounded-lg p-6">
+                <Card metal className="p-6">
                     <div className="flex items-center gap-2 mb-4">
                         <Scale className="w-5 h-5 text-purple-500" />
                         <h3 className="text-sm font-bold text-neutral-100 uppercase tracking-wider">
@@ -850,7 +847,7 @@ export default function BodyPartAnalysis({ userId }: BodyPartAnalysisProps) {
                                 </div>
                             );
                         })()}
-                </div>
+                </Card>
             )}
 
             {/* No Data State */}

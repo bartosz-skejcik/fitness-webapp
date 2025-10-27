@@ -2,6 +2,7 @@
 
 import { useSymmetryAnalysis } from "@/hooks/useSymmetryAnalysis";
 import { Loader2, AlertTriangle, Scale, CheckCircle2 } from "lucide-react";
+import { Card } from "../ui/card";
 
 export default function SymmetryStats() {
     const { summary, loading } = useSymmetryAnalysis(12);
@@ -55,7 +56,7 @@ export default function SymmetryStats() {
         <div className="space-y-6">
             {/* Summary Cards */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className="bg-neutral-900/50 border border-neutral-800 rounded-lg p-4">
+                <Card metal className="p-4">
                     <div className="flex items-center gap-3 mb-2">
                         <Scale className="w-5 h-5 text-blue-400" />
                         <h3 className="text-sm font-semibold text-neutral-300">
@@ -65,9 +66,9 @@ export default function SymmetryStats() {
                     <p className="text-2xl font-bold text-neutral-100">
                         {summary.totalUnilateralExercises}
                     </p>
-                </div>
+                </Card>
 
-                <div className="bg-neutral-900/50 border border-neutral-800 rounded-lg p-4">
+                <Card metal className="p-4">
                     <div className="flex items-center gap-3 mb-2">
                         <AlertTriangle className="w-5 h-5 text-yellow-400" />
                         <h3 className="text-sm font-semibold text-neutral-300">
@@ -80,9 +81,9 @@ export default function SymmetryStats() {
                     <p className="text-xs text-neutral-500 mt-1">
                         (różnica {">"} 15%)
                     </p>
-                </div>
+                </Card>
 
-                <div className="bg-neutral-900/50 border border-neutral-800 rounded-lg p-4">
+                <Card metal className="p-4">
                     <div className="flex items-center gap-3 mb-2">
                         <CheckCircle2 className="w-5 h-5 text-green-400" />
                         <h3 className="text-sm font-semibold text-neutral-300">
@@ -92,7 +93,7 @@ export default function SymmetryStats() {
                     <p className="text-2xl font-bold text-neutral-100">
                         {summary.averageImbalance.toFixed(1)}%
                     </p>
-                </div>
+                </Card>
             </div>
 
             {/* Worst Imbalance Warning */}
@@ -174,7 +175,7 @@ export default function SymmetryStats() {
                 )}
 
             {/* Exercise Symmetry Details */}
-            <div className="bg-neutral-900/50 border border-neutral-800 rounded-lg overflow-hidden">
+            <Card metal className="overflow-hidden p-0">
                 <div className="px-4 py-3 border-b border-neutral-800">
                     <h3 className="text-sm font-bold text-neutral-100">
                         SZCZEGÓŁY SYMETRII ĆWICZEŃ
@@ -329,7 +330,7 @@ export default function SymmetryStats() {
                         </div>
                     ))}
                 </div>
-            </div>
+            </Card>
 
             {/* Recommendations */}
             {summary.exercisesWithImbalance > 0 && (

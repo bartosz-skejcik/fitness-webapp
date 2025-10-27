@@ -9,6 +9,7 @@ import {
     Zap,
     Pause,
 } from "lucide-react";
+import { Card } from "../ui/card";
 
 export default function PeriodizationStats() {
     const { summary, loading } = usePeriodization(12);
@@ -39,15 +40,15 @@ export default function PeriodizationStats() {
     const getPhaseColor = (type: string) => {
         switch (type) {
             case "accumulation":
-                return "from-blue-500/20 to-blue-600/10 border-blue-500/30 text-blue-400";
+                return "from-blue-500/10 via-blue-500/5 to-blue-500/10 border-blue-500/20 text-blue-400";
             case "intensification":
-                return "from-orange-500/20 to-orange-600/10 border-orange-500/30 text-orange-400";
+                return "from-orange-500/10 via-orange-500/5 to-orange-500/10 border-orange-500/20 text-orange-400";
             case "deload":
-                return "from-green-500/20 to-green-600/10 border-green-500/30 text-green-400";
+                return "from-green-500/10 via-green-500/5 to-green-500/10 border-green-500/20 text-green-400";
             case "transition":
-                return "from-purple-500/20 to-purple-600/10 border-purple-500/30 text-purple-400";
+                return "from-purple-500/10 via-purple-500/5 to-purple-500/10 border-purple-500/20 text-purple-400";
             default:
-                return "from-neutral-500/20 to-neutral-600/10 border-neutral-500/30 text-neutral-400";
+                return "from-neutral-500/10 via-neutral-500/5 to-neutral-500/10 border-neutral-500/20 text-neutral-400";
         }
     };
 
@@ -99,10 +100,11 @@ export default function PeriodizationStats() {
     return (
         <div className="space-y-6">
             {/* Current Phase */}
-            <div
+            <Card
+                metal
                 className={`bg-gradient-to-br ${getPhaseColor(
                     summary.currentPhase.type
-                )} border-2 rounded-lg p-6`}
+                )} border-2 p-6`}
             >
                 <div className="flex items-center gap-4 mb-4">
                     <div className="p-3 bg-black/20 rounded-lg">
@@ -153,10 +155,13 @@ export default function PeriodizationStats() {
                         )}
                     </ul>
                 </div>
-            </div>
+            </Card>
 
             {/* Recommendation */}
-            <div className="bg-orange-500/10 border-2 border-orange-500/30 rounded-lg p-6">
+            <Card
+                metal
+                className="bg-gradient-to-br from-orange-500/10 via-orange-500/5 to-orange-500/10 border-2 border-orange-500/20 p-6"
+            >
                 <div className="flex items-start gap-3 mb-3">
                     <div className="p-2 bg-orange-500/20 rounded-lg">
                         <TrendingUp className="w-5 h-5 text-orange-400" />
@@ -171,11 +176,11 @@ export default function PeriodizationStats() {
                         </p>
                     </div>
                 </div>
-            </div>
+            </Card>
 
             {/* Phase History */}
             {summary.phaseHistory.length > 1 && (
-                <div className="bg-neutral-900/50 border border-neutral-800 rounded-lg overflow-hidden">
+                <Card metal className="overflow-hidden p-0">
                     <div className="px-4 py-3 border-b border-neutral-800">
                         <h3 className="text-sm font-bold text-neutral-100">
                             HISTORIA FAZ TRENINGOWYCH
@@ -265,11 +270,14 @@ export default function PeriodizationStats() {
                                 );
                             })}
                     </div>
-                </div>
+                </Card>
             )}
 
             {/* Info Section */}
-            <div className="bg-blue-500/10 border-2 border-blue-500/20 rounded-lg p-4">
+            <Card
+                metal
+                className="bg-gradient-to-br from-blue-500/10 via-blue-500/5 to-blue-500/10 border-2 border-blue-500/20 p-4"
+            >
                 <h3 className="font-semibold text-blue-400 mb-2">
                     📚 O periodyzacji treningowej
                 </h3>
@@ -315,7 +323,7 @@ export default function PeriodizationStats() {
                         </p>
                     </div>
                 </div>
-            </div>
+            </Card>
         </div>
     );
 }

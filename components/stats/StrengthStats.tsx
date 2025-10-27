@@ -9,6 +9,7 @@ import {
     AlertTriangle,
 } from "lucide-react";
 import { useStrengthStats } from "@/hooks/useStrengthStats";
+import { Card } from "../ui/card";
 
 interface StrengthStatsProps {
     userId: string | undefined;
@@ -73,7 +74,7 @@ export default function StrengthStats({ userId }: StrengthStatsProps) {
         <div className="space-y-6">
             {/* Volume Stats */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                <div className="bg-neutral-900 border border-neutral-800 rounded-lg p-6">
+                <Card metal className="p-6">
                     <div className="flex items-center gap-3 mb-3">
                         <div className="w-10 h-10 rounded-full bg-blue-500/20 flex items-center justify-center">
                             <Dumbbell className="w-5 h-5 text-blue-400" />
@@ -92,9 +93,9 @@ export default function StrengthStats({ userId }: StrengthStatsProps) {
                             : stats.volumeData.totalVolume}
                     </p>
                     <p className="text-xs text-neutral-500 mt-2">kg × reps</p>
-                </div>
+                </Card>
 
-                <div className="bg-neutral-900 border border-neutral-800 rounded-lg p-6">
+                <Card metal className="p-6">
                     <div className="flex items-center gap-3 mb-3">
                         <div className="w-10 h-10 rounded-full bg-orange-500/20 flex items-center justify-center">
                             <TrendingUp className="w-5 h-5 text-orange-400" />
@@ -113,9 +114,9 @@ export default function StrengthStats({ userId }: StrengthStatsProps) {
                             : stats.volumeData.weeklyVolume}
                     </p>
                     <p className="text-xs text-neutral-500 mt-2">kg × reps</p>
-                </div>
+                </Card>
 
-                <div className="bg-neutral-900 border border-neutral-800 rounded-lg p-6">
+                <Card metal className="p-6">
                     <div className="flex items-center gap-3 mb-3">
                         <div className="w-10 h-10 rounded-full bg-blue-500/20 flex items-center justify-center">
                             <BarChart3 className="w-5 h-5 text-blue-400" />
@@ -130,9 +131,9 @@ export default function StrengthStats({ userId }: StrengthStatsProps) {
                         {stats.volumeData.avgReps}
                     </p>
                     <p className="text-xs text-neutral-500 mt-2">reps/set</p>
-                </div>
+                </Card>
 
-                <div className="bg-neutral-900 border border-neutral-800 rounded-lg p-6">
+                <Card metal className="p-6">
                     <div className="flex items-center gap-3 mb-3">
                         <div className="w-10 h-10 rounded-full bg-orange-500/20 flex items-center justify-center">
                             <BarChart3 className="w-5 h-5 text-orange-400" />
@@ -149,11 +150,11 @@ export default function StrengthStats({ userId }: StrengthStatsProps) {
                     <p className="text-xs text-neutral-500 mt-2">
                         sets/exercise
                     </p>
-                </div>
+                </Card>
             </div>
 
             {/* Personal Records - Top 5 1RM */}
-            <div className="bg-neutral-900 border border-neutral-800 rounded-lg p-6">
+            <Card metal className="p-6">
                 <div className="flex items-center gap-2 mb-4">
                     <Trophy className="w-5 h-5 text-orange-500" />
                     <h3 className="text-sm font-bold text-neutral-100 uppercase tracking-wider">
@@ -190,10 +191,10 @@ export default function StrengthStats({ userId }: StrengthStatsProps) {
                         ))}
                     </div>
                 )}
-            </div>
+            </Card>
 
             {/* Most Performed Exercises */}
-            <div className="bg-neutral-900 border border-neutral-800 rounded-lg p-6">
+            <Card metal className="p-6">
                 <div className="flex items-center gap-2 mb-4">
                     <Award className="w-5 h-5 text-blue-400" />
                     <h3 className="text-sm font-bold text-neutral-100 uppercase tracking-wider">
@@ -238,10 +239,10 @@ export default function StrengthStats({ userId }: StrengthStatsProps) {
                         ))}
                     </div>
                 )}
-            </div>
+            </Card>
 
             {/* Body Part Volume Distribution */}
-            <div className="bg-neutral-900 border border-neutral-800 rounded-lg p-6">
+            <Card metal className="p-6">
                 <div className="flex items-center gap-2 mb-4">
                     <Dumbbell className="w-5 h-5 text-orange-500" />
                     <h3 className="text-sm font-bold text-neutral-100 uppercase tracking-wider">
@@ -308,11 +309,11 @@ export default function StrengthStats({ userId }: StrengthStatsProps) {
                         ))}
                     </div>
                 )}
-            </div>
+            </Card>
 
             {/* Body Part PRs - Best Exercise Per Body Part */}
             {stats.bodyPartPRs.length > 0 && (
-                <div className="bg-neutral-900 border border-neutral-800 rounded-lg p-6">
+                <Card metal className="p-6">
                     <div className="flex items-center gap-2 mb-4">
                         <Trophy className="w-5 h-5 text-yellow-500" />
                         <h3 className="text-sm font-bold text-neutral-100 uppercase tracking-wider">
@@ -353,12 +354,12 @@ export default function StrengthStats({ userId }: StrengthStatsProps) {
                             </div>
                         ))}
                     </div>
-                </div>
+                </Card>
             )}
 
             {/* Body Part Training Frequency */}
             {stats.bodyPartFrequency.length > 0 && (
-                <div className="bg-neutral-900 border border-neutral-800 rounded-lg p-6">
+                <Card metal className="p-6">
                     <div className="flex items-center gap-2 mb-4">
                         <Calendar className="w-5 h-5 text-blue-500" />
                         <h3 className="text-sm font-bold text-neutral-100 uppercase tracking-wider">
@@ -452,7 +453,7 @@ export default function StrengthStats({ userId }: StrengthStatsProps) {
                                 );
                             })}
                     </div>
-                </div>
+                </Card>
             )}
         </div>
     );

@@ -8,6 +8,7 @@ import {
 } from "lucide-react";
 import { useGoalsStats, Badge } from "@/hooks/useGoalsStats";
 import BodyPartGoalsManager from "./BodyPartGoalsManager";
+import { Card } from "../ui/card";
 
 interface GoalsStatsProps {
     userId: string | undefined;
@@ -112,7 +113,7 @@ export default function GoalsStats({ userId }: GoalsStatsProps) {
             </div>
 
             {/* Overall Progress */}
-            <div className="bg-gradient-to-br from-orange-500/10 to-orange-500/5 border border-orange-500/20 rounded-lg p-6">
+            <div className="bg-gradient-to-br from-orange-500/10 via-orange-500/5 border border-orange-500/20 rounded-lg p-6">
                 <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
                         <Trophy className="w-5 h-5 text-orange-500" />
@@ -141,7 +142,7 @@ export default function GoalsStats({ userId }: GoalsStatsProps) {
             </div>
 
             {/* General Badges */}
-            <div className="bg-neutral-900 border border-neutral-800 rounded-lg p-6">
+            <Card metal className="p-6">
                 <div className="flex items-center gap-2 mb-4">
                     <Award className="w-5 h-5 text-blue-500" />
                     <h3 className="text-sm font-bold text-neutral-100 uppercase tracking-wider">
@@ -155,10 +156,10 @@ export default function GoalsStats({ userId }: GoalsStatsProps) {
                         <BadgeCard key={badge.id} badge={badge} />
                     ))}
                 </div>
-            </div>
+            </Card>
 
             {/* Body Part Badges */}
-            <div className="bg-neutral-900 border border-neutral-800 rounded-lg p-6">
+            <Card metal className="p-6">
                 <div className="flex items-center gap-2 mb-4">
                     <Trophy className="w-5 h-5 text-purple-500" />
                     <h3 className="text-sm font-bold text-neutral-100 uppercase tracking-wider">
@@ -172,10 +173,10 @@ export default function GoalsStats({ userId }: GoalsStatsProps) {
                         <BadgeCard key={badge.id} badge={badge} />
                     ))}
                 </div>
-            </div>
+            </Card>
 
             {/* Balance Badges */}
-            <div className="bg-neutral-900 border border-neutral-800 rounded-lg p-6">
+            <Card metal className="p-6">
                 <div className="flex items-center gap-2 mb-4">
                     <CheckCircle2 className="w-5 h-5 text-green-500" />
                     <h3 className="text-sm font-bold text-neutral-100 uppercase tracking-wider">
@@ -189,10 +190,10 @@ export default function GoalsStats({ userId }: GoalsStatsProps) {
                         <BadgeCard key={badge.id} badge={badge} />
                     ))}
                 </div>
-            </div>
+            </Card>
 
             {/* Recent Personal Records */}
-            <div className="bg-neutral-900 border border-neutral-800 rounded-lg p-6">
+            <Card metal className="p-6">
                 <div className="flex items-center gap-2 mb-4">
                     <Award className="w-5 h-5 text-blue-400" />
                     <h3 className="text-sm font-bold text-neutral-100 uppercase tracking-wider">
@@ -236,7 +237,7 @@ export default function GoalsStats({ userId }: GoalsStatsProps) {
                         ))}
                     </div>
                 )}
-            </div>
+            </Card>
 
             {/* Top 3 Improvements This Month */}
             <div className="bg-gradient-to-br from-green-500/10 to-green-500/5 border border-green-500/20 rounded-lg p-6">

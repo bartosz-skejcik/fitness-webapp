@@ -8,6 +8,7 @@ import {
     Activity,
     TrendingUp,
 } from "lucide-react";
+import { Card } from "../ui/card";
 
 export default function InjuryRiskStats() {
     const { summary, loading } = useInjuryRisk(12);
@@ -38,11 +39,11 @@ export default function InjuryRiskStats() {
     const getRiskColor = (risk: "low" | "moderate" | "high") => {
         switch (risk) {
             case "low":
-                return "from-green-500/20 to-green-600/10 border-green-500/30 text-green-400";
+                return "from-green-500/10 via-green-500/5 to-green-500/10 border-green-500/20 text-green-400";
             case "moderate":
-                return "from-yellow-500/20 to-yellow-600/10 border-yellow-500/30 text-yellow-400";
+                return "from-yellow-500/10 via-yellow-500/5 to-yellow-500/10 border-yellow-500/20 text-yellow-400";
             case "high":
-                return "from-red-500/20 to-red-600/10 border-red-500/30 text-red-400";
+                return "from-red-500/10 via-red-500/5 to-red-500/10 border-red-500/20 text-red-400";
         }
     };
 
@@ -60,11 +61,11 @@ export default function InjuryRiskStats() {
     const getSeverityColor = (severity: "low" | "moderate" | "high") => {
         switch (severity) {
             case "low":
-                return "bg-blue-500/10 text-blue-400 border-blue-500/20";
+                return "bg-gradient-to-br from-blue-500/10 via-blue-500/5 to-blue-500/10 text-blue-400 border-blue-500/20";
             case "moderate":
-                return "bg-yellow-500/10 text-yellow-400 border-yellow-500/20";
+                return "bg-gradient-to-br from-yellow-500/10 via-yellow-500/5 to-yellow-500/10 text-yellow-400 border-yellow-500/20";
             case "high":
-                return "bg-red-500/10 text-red-400 border-red-500/20";
+                return "bg-gradient-to-br from-red-500/10 via-red-500/5 to-red-500/10 text-red-400 border-red-500/20";
         }
     };
 
@@ -112,10 +113,11 @@ export default function InjuryRiskStats() {
     return (
         <div className="space-y-6">
             {/* Overall Risk Score */}
-            <div
+            <Card
+                metal
                 className={`bg-gradient-to-br ${getRiskColor(
                     summary.overallRisk
-                )} border-2 rounded-lg p-6`}
+                )} border-2 p-6`}
             >
                 <div className="flex items-center justify-between mb-4">
                     <div>
@@ -158,46 +160,46 @@ export default function InjuryRiskStats() {
                         </p>
                     </div>
                 )}
-            </div>
+            </Card>
 
             {/* Risk Categories Summary */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <div className="bg-neutral-900/50 border border-neutral-800 rounded-lg p-4 text-center">
+                <Card metal className="p-4 text-center">
                     <TrendingUp className="w-6 h-6 text-orange-400 mx-auto mb-2" />
                     <p className="text-2xl font-bold text-neutral-100">
                         {summary.volumeSpikes.length}
                     </p>
                     <p className="text-xs text-neutral-400">Skoki objętości</p>
-                </div>
+                </Card>
 
-                <div className="bg-neutral-900/50 border border-neutral-800 rounded-lg p-4 text-center">
+                <Card metal className="p-4 text-center">
                     <Activity className="w-6 h-6 text-purple-400 mx-auto mb-2" />
                     <p className="text-2xl font-bold text-neutral-100">
                         {summary.imbalances.length}
                     </p>
                     <p className="text-xs text-neutral-400">Dysproporcje</p>
-                </div>
+                </Card>
 
-                <div className="bg-neutral-900/50 border border-neutral-800 rounded-lg p-4 text-center">
+                <Card metal className="p-4 text-center">
                     <AlertTriangle className="w-6 h-6 text-red-400 mx-auto mb-2" />
                     <p className="text-2xl font-bold text-neutral-100">
                         {summary.overtrainingIndicators.length}
                     </p>
                     <p className="text-xs text-neutral-400">Przetrenowanie</p>
-                </div>
+                </Card>
 
-                <div className="bg-neutral-900/50 border border-neutral-800 rounded-lg p-4 text-center">
+                <Card metal className="p-4 text-center">
                     <Shield className="w-6 h-6 text-blue-400 mx-auto mb-2" />
                     <p className="text-2xl font-bold text-neutral-100">
                         {summary.neglectedStabilizers.length}
                     </p>
                     <p className="text-xs text-neutral-400">Stabilizatory</p>
-                </div>
+                </Card>
             </div>
 
             {/* Risk Factors Details */}
             {summary.factors.length > 0 && (
-                <div className="bg-neutral-900/50 border border-neutral-800 rounded-lg overflow-hidden">
+                <Card metal className="overflow-hidden">
                     <div className="px-4 py-3 border-b border-neutral-800">
                         <h3 className="text-sm font-bold text-neutral-100">
                             WYKRYTE CZYNNIKI RYZYKA
@@ -245,12 +247,15 @@ export default function InjuryRiskStats() {
                             </div>
                         ))}
                     </div>
-                </div>
+                </Card>
             )}
 
             {/* No Risk Factors */}
             {summary.factors.length === 0 && (
-                <div className="bg-green-500/10 border-2 border-green-500/20 rounded-lg p-6 text-center">
+                <Card
+                    metal
+                    className="bg-gradient-to-br from-green-500/10 via-green-500/5 to-green-500/10 border-2 border-green-500/20 p-6 text-center"
+                >
                     <Shield className="w-12 h-12 text-green-400 mx-auto mb-3" />
                     <h3 className="text-lg font-semibold text-green-400 mb-2">
                         Świetna robota!
@@ -259,11 +264,14 @@ export default function InjuryRiskStats() {
                         Nie wykryto żadnych czynników ryzyka kontuzji. Kontynuuj
                         trening według obecnego planu.
                     </p>
-                </div>
+                </Card>
             )}
 
             {/* General Tips */}
-            <div className="bg-blue-500/10 border-2 border-blue-500/20 rounded-lg p-4">
+            <Card
+                metal
+                className="bg-gradient-to-br from-blue-500/10 via-blue-500/5 to-blue-500/10 border-2 border-blue-500/20 p-4"
+            >
                 <h3 className="font-semibold text-blue-400 mb-2">
                     📚 Ogólne wskazówki prewencyjne
                 </h3>
@@ -293,7 +301,7 @@ export default function InjuryRiskStats() {
                         regenerację
                     </li>
                 </ul>
-            </div>
+            </Card>
         </div>
     );
 }
