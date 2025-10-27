@@ -9,6 +9,7 @@ type AuthContextType = {
     user: User | null;
     loading: boolean;
     signInWithGoogle: () => Promise<void>;
+    signInWithDiscord: () => Promise<void>;
     signOut: () => Promise<void>;
 };
 
@@ -50,6 +51,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
     };
 
+    const signInWithDiscord = async () => {
+        const { error } = await supabase.auth.signInWithOAuth({
+            provider: "discord",
+            options: {
+                redirectTo: `${window.location.origin}/auth/callback`,
+            },
+        });
+        if (error) {
+            console.error("Error signing in:", error.message);
+        }
+    };
+
     const signOut = async () => {
         await supabase.auth.signOut();
         router.push("/login");
@@ -57,7 +70,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     return (
         <AuthContext.Provider
-            value={{ user, loading, signInWithGoogle, signOut }}
+            value={{
+                user,
+                loading,
+                signInWithGoogle,
+                signOut,
+                signInWithDiscord,
+            }}
         >
             {children}
         </AuthContext.Provider>
