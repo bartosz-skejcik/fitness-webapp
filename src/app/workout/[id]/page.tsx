@@ -566,15 +566,21 @@ export default function WorkoutSessionPage() {
                                     {(selectedExercise.target_reps_min ||
                                         selectedExercise.target_reps_max) && (
                                         <span className="px-2 py-1 rounded bg-blue-500/10 text-blue-300 border border-blue-500/20">
-                                            Cel: {selectedExercise.target_reps_min ?? "?"}–
-                                            {selectedExercise.target_reps_max ?? "?"} powt.
+                                            Cel:{" "}
+                                            {selectedExercise.target_reps_min ??
+                                                "?"}
+                                            –
+                                            {selectedExercise.target_reps_max ??
+                                                "?"}{" "}
+                                            powt.
                                         </span>
                                     )}
                                     {selectedExercise.rest_seconds !== null &&
                                         selectedExercise.rest_seconds !==
                                             undefined && (
                                             <span className="px-2 py-1 rounded bg-neutral-800 text-neutral-300 border border-neutral-700">
-                                                Odpoczynek: {formatSeconds(
+                                                Odpoczynek:{" "}
+                                                {formatSeconds(
                                                     selectedExercise.rest_seconds
                                                 )}
                                             </span>

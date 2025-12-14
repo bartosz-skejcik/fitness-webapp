@@ -647,15 +647,11 @@ export default function NewTemplatePage() {
                                             </button>
                                             <button
                                                 onClick={() =>
-                                                    moveExercise(
-                                                        index,
-                                                        "down"
-                                                    )
+                                                    moveExercise(index, "down")
                                                 }
                                                 disabled={
                                                     index ===
-                                                    selectedExercises.length -
-                                                        1
+                                                    selectedExercises.length - 1
                                                 }
                                                 className="text-neutral-500 hover:text-neutral-300 disabled:opacity-30 text-xs"
                                             >
@@ -807,9 +803,11 @@ export default function NewTemplatePage() {
                                                         exercise.rest_seconds !==
                                                             undefined && (
                                                             <span className="text-[10px] text-neutral-500">
-                                                                ({formatSeconds(
+                                                                (
+                                                                {formatSeconds(
                                                                     exercise.rest_seconds
-                                                                )})
+                                                                )}
+                                                                )
                                                             </span>
                                                         )}
                                                 </div>

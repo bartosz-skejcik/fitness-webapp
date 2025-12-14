@@ -695,18 +695,31 @@ export default function TemplateDetailPage() {
 
                                                 <div className="flex flex-wrap items-center gap-2 mt-2 text-xs text-neutral-400">
                                                     <span className="px-2 py-0.5 rounded bg-neutral-800 border border-neutral-700">
-                                                        {ex.sets_count} {ex.sets_count === 1 ? "seria" : "serie"}
+                                                        {ex.sets_count}{" "}
+                                                        {ex.sets_count === 1
+                                                            ? "seria"
+                                                            : "serie"}
                                                     </span>
-                                                    {(ex.target_reps_min || ex.target_reps_max) && (
+                                                    {(ex.target_reps_min ||
+                                                        ex.target_reps_max) && (
                                                         <span className="px-2 py-0.5 rounded bg-blue-500/10 text-blue-300 border border-blue-500/20">
-                                                            Cel: {ex.target_reps_min ?? "?"}–
-                                                            {ex.target_reps_max ?? "?"} powt.
+                                                            Cel:{" "}
+                                                            {ex.target_reps_min ??
+                                                                "?"}
+                                                            –
+                                                            {ex.target_reps_max ??
+                                                                "?"}{" "}
+                                                            powt.
                                                         </span>
                                                     )}
                                                     {ex.rest_seconds !== null &&
-                                                        ex.rest_seconds !== undefined && (
+                                                        ex.rest_seconds !==
+                                                            undefined && (
                                                             <span className="px-2 py-0.5 rounded bg-neutral-800 border border-neutral-700">
-                                                                Odpoczynek: {formatSeconds(ex.rest_seconds)}
+                                                                Odpoczynek:{" "}
+                                                                {formatSeconds(
+                                                                    ex.rest_seconds
+                                                                )}
                                                             </span>
                                                         )}
                                                 </div>
@@ -1128,8 +1141,7 @@ export default function TemplateDetailPage() {
                                                             onChange={(e) => {
                                                                 const value =
                                                                     parseInt(
-                                                                        e
-                                                                            .target
+                                                                        e.target
                                                                             .value,
                                                                         10
                                                                     );
@@ -1161,8 +1173,7 @@ export default function TemplateDetailPage() {
                                                             onChange={(e) => {
                                                                 const value =
                                                                     parseInt(
-                                                                        e
-                                                                            .target
+                                                                        e.target
                                                                             .value,
                                                                         10
                                                                     );
@@ -1199,8 +1210,7 @@ export default function TemplateDetailPage() {
                                                             onChange={(e) => {
                                                                 const value =
                                                                     parseInt(
-                                                                        e
-                                                                            .target
+                                                                        e.target
                                                                             .value,
                                                                         10
                                                                     );
@@ -1224,9 +1234,11 @@ export default function TemplateDetailPage() {
                                                             exercise.rest_seconds !==
                                                                 undefined && (
                                                                 <span className="text-[11px] text-neutral-500">
-                                                                    ({formatSeconds(
+                                                                    (
+                                                                    {formatSeconds(
                                                                         exercise.rest_seconds
-                                                                    )})
+                                                                    )}
+                                                                    )
                                                                 </span>
                                                             )}
                                                     </div>
