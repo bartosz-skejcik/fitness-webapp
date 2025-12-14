@@ -11,6 +11,7 @@ import {
     WorkoutType,
 } from "@/types/database";
 import { TargetBodyPart } from "@/types/database";
+import { formatSeconds } from "@/lib/utils";
 import {
     ArrowLeft,
     Edit2,
@@ -241,6 +242,9 @@ export default function TemplateDetailPage() {
             exercise_id: exercise.id,
             order_index: editExercises.length,
             sets_count: 3,
+            target_reps_min: null,
+            target_reps_max: null,
+            rest_seconds: null,
             created_at: new Date().toISOString(),
             exercise: exercise,
         };
@@ -256,10 +260,19 @@ export default function TemplateDetailPage() {
         );
     }
 
+    function updateExerciseFields(
+        index: number,
+        updates: Partial<ExerciseWithDetails>
+    ) {
+        setEditExercises((prev) => {
+            const updated = [...prev];
+            updated[index] = { ...updated[index], ...updates };
+            return updated;
+        });
+    }
+
     function updateSetsCount(index: number, count: number) {
-        const newExercises = [...editExercises];
-        newExercises[index].sets_count = Math.max(1, count);
-        setEditExercises(newExercises);
+        updateExerciseFields(index, { sets_count: Math.max(1, count) });
     }
 
     function updateExerciseTarget(index: number, target: TargetBodyPart | "") {
@@ -346,6 +359,9 @@ export default function TemplateDetailPage() {
                     exercise_id: ex.exercise_id,
                     order_index: ex.order_index,
                     sets_count: ex.sets_count,
+                    target_reps_min: ex.target_reps_min ?? null,
+                    target_reps_max: ex.target_reps_max ?? null,
+                    rest_seconds: ex.rest_seconds ?? null,
                 }));
 
                 const { error: insertError } = await supabase
@@ -676,12 +692,37 @@ export default function TemplateDetailPage() {
                                                         ćwiczenia
                                                     </p>
                                                 )}
-                                            </div>
-                                            <div className="text-sm text-neutral-400">
-                                                <span className="font-medium">
-                                                    {ex.sets_count}
-                                                </span>{" "}
-                                                serie
+
+                                                <div className="flex flex-wrap items-center gap-2 mt-2 text-xs text-neutral-400">
+                                                    <span className="px-2 py-0.5 rounded bg-neutral-800 border border-neutral-700">
+                                                        {ex.sets_count}{" "}
+                                                        {ex.sets_count === 1
+                                                            ? "seria"
+                                                            : "serie"}
+                                                    </span>
+                                                    {(ex.target_reps_min ||
+                                                        ex.target_reps_max) && (
+                                                        <span className="px-2 py-0.5 rounded bg-blue-500/10 text-blue-300 border border-blue-500/20">
+                                                            Cel:{" "}
+                                                            {ex.target_reps_min ??
+                                                                "?"}
+                                                            –
+                                                            {ex.target_reps_max ??
+                                                                "?"}{" "}
+                                                            powt.
+                                                        </span>
+                                                    )}
+                                                    {ex.rest_seconds !== null &&
+                                                        ex.rest_seconds !==
+                                                            undefined && (
+                                                            <span className="px-2 py-0.5 rounded bg-neutral-800 border border-neutral-700">
+                                                                Odpoczynek:{" "}
+                                                                {formatSeconds(
+                                                                    ex.rest_seconds
+                                                                )}
+                                                            </span>
+                                                        )}
+                                                </div>
                                             </div>
                                         </div>
                                     ))}
@@ -1060,25 +1101,148 @@ export default function TemplateDetailPage() {
                                                 </select>
                                             </div>
 
-                                            {/* Sets Count */}
-                                            <div>
-                                                <label className="block text-xs text-neutral-400 mb-1">
-                                                    Liczba serii
-                                                </label>
-                                                <input
-                                                    type="number"
-                                                    min="1"
-                                                    value={exercise.sets_count}
-                                                    onChange={(e) =>
-                                                        updateSetsCount(
-                                                            index,
-                                                            parseInt(
-                                                                e.target.value
-                                                            ) || 1
-                                                        )
-                                                    }
-                                                    className="w-full px-3 py-2 bg-neutral-900 border border-neutral-700 text-neutral-100 rounded-lg text-sm"
-                                                />
+                                            {/* Sets / Targets */}
+                                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                                                <div>
+                                                    <label className="block text-xs text-neutral-400 mb-1">
+                                                        Liczba serii
+                                                    </label>
+                                                    <input
+                                                        type="number"
+                                                        min="1"
+                                                        value={
+                                                            exercise.sets_count
+                                                        }
+                                                        onChange={(e) =>
+                                                            updateSetsCount(
+                                                                index,
+                                                                parseInt(
+                                                                    e.target
+                                                                        .value
+                                                                ) || 1
+                                                            )
+                                                        }
+                                                        className="w-full px-3 py-2 bg-neutral-900 border border-neutral-700 text-neutral-100 rounded-lg text-sm"
+                                                    />
+                                                </div>
+
+                                                <div>
+                                                    <label className="block text-xs text-neutral-400 mb-1">
+                                                        Cel powtórzeń
+                                                    </label>
+                                                    <div className="flex items-center gap-2">
+                                                        <input
+                                                            type="number"
+                                                            min="1"
+                                                            value={
+                                                                exercise.target_reps_min ??
+                                                                ""
+                                                            }
+                                                            onChange={(e) => {
+                                                                const value =
+                                                                    parseInt(
+                                                                        e.target
+                                                                            .value,
+                                                                        10
+                                                                    );
+                                                                updateExerciseFields(
+                                                                    index,
+                                                                    {
+                                                                        target_reps_min:
+                                                                            Number.isNaN(
+                                                                                value
+                                                                            )
+                                                                                ? null
+                                                                                : value,
+                                                                    }
+                                                                );
+                                                            }}
+                                                            placeholder="min"
+                                                            className="w-20 px-2 py-2 bg-neutral-900 border border-neutral-700 text-neutral-100 rounded-lg text-sm text-center"
+                                                        />
+                                                        <span className="text-neutral-500 text-sm">
+                                                            –
+                                                        </span>
+                                                        <input
+                                                            type="number"
+                                                            min="1"
+                                                            value={
+                                                                exercise.target_reps_max ??
+                                                                ""
+                                                            }
+                                                            onChange={(e) => {
+                                                                const value =
+                                                                    parseInt(
+                                                                        e.target
+                                                                            .value,
+                                                                        10
+                                                                    );
+                                                                updateExerciseFields(
+                                                                    index,
+                                                                    {
+                                                                        target_reps_max:
+                                                                            Number.isNaN(
+                                                                                value
+                                                                            )
+                                                                                ? null
+                                                                                : value,
+                                                                    }
+                                                                );
+                                                            }}
+                                                            placeholder="max"
+                                                            className="w-20 px-2 py-2 bg-neutral-900 border border-neutral-700 text-neutral-100 rounded-lg text-sm text-center"
+                                                        />
+                                                    </div>
+                                                </div>
+
+                                                <div>
+                                                    <label className="block text-xs text-neutral-400 mb-1">
+                                                        Odpoczynek (sekundy)
+                                                    </label>
+                                                    <div className="flex items-center gap-2">
+                                                        <input
+                                                            type="number"
+                                                            min="0"
+                                                            value={
+                                                                exercise.rest_seconds ??
+                                                                ""
+                                                            }
+                                                            onChange={(e) => {
+                                                                const value =
+                                                                    parseInt(
+                                                                        e.target
+                                                                            .value,
+                                                                        10
+                                                                    );
+                                                                updateExerciseFields(
+                                                                    index,
+                                                                    {
+                                                                        rest_seconds:
+                                                                            Number.isNaN(
+                                                                                value
+                                                                            )
+                                                                                ? null
+                                                                                : value,
+                                                                    }
+                                                                );
+                                                            }}
+                                                            placeholder="np. 90"
+                                                            className="w-24 px-2 py-2 bg-neutral-900 border border-neutral-700 text-neutral-100 rounded-lg text-sm text-center"
+                                                        />
+                                                        {exercise.rest_seconds !==
+                                                            null &&
+                                                            exercise.rest_seconds !==
+                                                                undefined && (
+                                                                <span className="text-[11px] text-neutral-500">
+                                                                    (
+                                                                    {formatSeconds(
+                                                                        exercise.rest_seconds
+                                                                    )}
+                                                                    )
+                                                                </span>
+                                                            )}
+                                                    </div>
+                                                </div>
                                             </div>
 
                                             {/* Save button for existing exercises */}

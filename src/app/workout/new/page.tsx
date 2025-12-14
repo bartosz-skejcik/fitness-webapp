@@ -115,12 +115,17 @@ export default function NewWorkoutPage() {
                 exercise_id: string;
                 sets_count: number;
                 order_index: number;
+                target_reps_min?: number | null;
+                target_reps_max?: number | null;
+                rest_seconds?: number | null;
             }> = [];
 
             if (selectedTemplate) {
                 const { data, error } = await supabase
                     .from("workout_template_exercises")
-                    .select("exercise_id, sets_count, order_index")
+                    .select(
+                        "exercise_id, sets_count, order_index, target_reps_min, target_reps_max, rest_seconds"
+                    )
                     .eq("workout_template_id", selectedTemplate)
                     .order("order_index");
 
@@ -131,6 +136,9 @@ export default function NewWorkoutPage() {
                     exercise_id: id,
                     sets_count: 3,
                     order_index: idx,
+                    target_reps_min: null,
+                    target_reps_max: null,
+                    rest_seconds: null,
                 }));
             }
 
@@ -139,6 +147,9 @@ export default function NewWorkoutPage() {
                 workout_session_id: session.id,
                 exercise_id: ex.exercise_id,
                 order_index: ex.order_index,
+                target_reps_min: ex.target_reps_min ?? null,
+                target_reps_max: ex.target_reps_max ?? null,
+                rest_seconds: ex.rest_seconds ?? null,
             }));
 
             const { data: exerciseLogs, error: logsError } = await supabase
