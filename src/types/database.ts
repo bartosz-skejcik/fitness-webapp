@@ -53,6 +53,9 @@ export interface WorkoutTemplateExercise {
     exercise_id: string;
     order_index: number;
     sets_count: number;
+    target_reps_min?: number | null;
+    target_reps_max?: number | null;
+    rest_seconds?: number | null;
     created_at: string;
     exercise?: Exercise;
 }
@@ -74,6 +77,9 @@ export interface ExerciseLog {
     workout_session_id: string;
     exercise_id: string;
     order_index: number;
+    target_reps_min?: number | null;
+    target_reps_max?: number | null;
+    rest_seconds?: number | null;
     notes?: string;
     created_at: string;
     exercise?: Exercise;
