@@ -208,21 +208,34 @@ export default function WorkoutSessionPage() {
                 }
             }
 
-            const logsWithSets = logsData.map((log) => {
-                const previousLogId = latestPreviousLogByExerciseId.get(
-                    log.exercise_id,
-                );
+            const logsWithSets: ExerciseLogWithDetails[] = logsData.flatMap(
+                (log) => {
+                    const previousLogId = latestPreviousLogByExerciseId.get(
+                        log.exercise_id,
+                    );
 
-                return {
-                    ...log,
-                    sets: setsByLogId.get(log.id) || [],
-                    previousSets: previousLogId
-                        ? previousSetsByLogId.get(previousLogId) || []
-                        : [],
-                };
-            });
+                    const normalizedExercise = Array.isArray(log.exercise)
+                        ? log.exercise[0]
+                        : log.exercise;
 
-            setExerciseLogs(logsWithSets as ExerciseLogWithDetails[]);
+                    if (!normalizedExercise) {
+                        return [];
+                    }
+
+                    return [
+                        {
+                            ...log,
+                            exercise: normalizedExercise as Exercise,
+                            sets: setsByLogId.get(log.id) || [],
+                            previousSets: previousLogId
+                                ? previousSetsByLogId.get(previousLogId) || []
+                                : [],
+                        },
+                    ];
+                },
+            );
+
+            setExerciseLogs(logsWithSets);
 
             // Check if there's an exercise index in URL params
             const exerciseParam = searchParams.get("exercise");
@@ -237,9 +250,7 @@ export default function WorkoutSessionPage() {
                 urlExerciseIndex < logsWithSets.length
             ) {
                 setCurrentExerciseIndex(urlExerciseIndex);
-                setSelectedExercise(
-                    logsWithSets[urlExerciseIndex] as ExerciseLogWithDetails,
-                );
+                setSelectedExercise(logsWithSets[urlExerciseIndex]);
             } else {
                 // Auto-select first incomplete exercise
                 const firstIncomplete = logsWithSets.find((log) =>
@@ -250,15 +261,11 @@ export default function WorkoutSessionPage() {
                         (l) => l.id === firstIncomplete.id,
                     );
                     setCurrentExerciseIndex(index);
-                    setSelectedExercise(
-                        firstIncomplete as ExerciseLogWithDetails,
-                    );
+                    setSelectedExercise(firstIncomplete);
                     updateExerciseInUrl(index);
                 } else if (logsWithSets.length > 0) {
                     setCurrentExerciseIndex(0);
-                    setSelectedExercise(
-                        logsWithSets[0] as ExerciseLogWithDetails,
-                    );
+                    setSelectedExercise(logsWithSets[0]);
                     updateExerciseInUrl(0);
                 }
             }
