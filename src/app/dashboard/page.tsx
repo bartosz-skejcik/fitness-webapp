@@ -55,37 +55,40 @@ export default function DashboardPage() {
 
     async function fetchData() {
         try {
-            // Fetch workout templates
-            const { data: templatesData, error: templatesError } =
-                await supabase
+            const [templatesRes, sessionsRes] = await Promise.all([
+                supabase
                     .from("workout_templates")
-                    .select("*")
+                    .select(
+                        "id, user_id, name, workout_type, description, created_at, updated_at",
+                    )
                     .eq("user_id", user?.id)
-                    .order("created_at", { ascending: false });
-
-            if (templatesError) throw templatesError;
-            setTemplates(templatesData || []);
-
-            // Fetch all workout sessions
-            const { data: allSessions, error: allSessionsError } =
-                await supabase
+                    .order("created_at", { ascending: false }),
+                supabase
                     .from("workout_sessions")
-                    .select("*")
+                    .select(
+                        "id, user_id, workout_template_id, name, workout_type, started_at, completed_at, notes, created_at",
+                    )
                     .eq("user_id", user?.id)
-                    .order("started_at", { ascending: false });
+                    .order("started_at", { ascending: false }),
+            ]);
 
-            if (allSessionsError) throw allSessionsError;
+            if (templatesRes.error) throw templatesRes.error;
+            setTemplates((templatesRes.data || []) as WorkoutTemplate[]);
+
+            const allSessions = sessionsRes.data || [];
+
+            if (sessionsRes.error) throw sessionsRes.error;
 
             // Fetch recent workout sessions for display
             const recentSessionsData = (allSessions || []).slice(0, 5);
-            setRecentSessions(recentSessionsData);
+            setRecentSessions(recentSessionsData as WorkoutSession[]);
 
             // Calculate stats
             const now = new Date();
             const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
 
             const weeklyWorkouts = (allSessions || []).filter(
-                (s) => new Date(s.started_at) >= weekAgo
+                (s) => new Date(s.started_at) >= weekAgo,
             ).length;
 
             // Calculate current streak
@@ -93,7 +96,7 @@ export default function DashboardPage() {
             const sortedSessions = (allSessions || []).sort(
                 (a, b) =>
                     new Date(b.started_at).getTime() -
-                    new Date(a.started_at).getTime()
+                    new Date(a.started_at).getTime(),
             );
 
             const today = new Date();
@@ -105,7 +108,7 @@ export default function DashboardPage() {
 
                 const daysDiff = Math.floor(
                     (today.getTime() - sessionDate.getTime()) /
-                        (1000 * 60 * 60 * 24)
+                        (1000 * 60 * 60 * 24),
                 );
 
                 if (daysDiff === streak || (streak === 0 && daysDiff <= 1)) {
@@ -135,7 +138,7 @@ export default function DashboardPage() {
 
                     const totalVolume = (sets || []).reduce(
                         (sum, set) => sum + set.reps * (set.weight || 0),
-                        0
+                        0,
                     );
 
                     setStats({
@@ -407,7 +410,7 @@ export default function DashboardPage() {
                                         </h3>
                                         <p className="text-xs text-neutral-500">
                                             {new Date(
-                                                session.started_at
+                                                session.started_at,
                                             ).toLocaleDateString("pl-PL", {
                                                 day: "numeric",
                                                 month: "long",

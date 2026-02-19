@@ -41,7 +41,7 @@ export default function WorkoutSessionPage() {
 
     const [session, setSession] = useState<WorkoutSession | null>(null);
     const [exerciseLogs, setExerciseLogs] = useState<ExerciseLogWithDetails[]>(
-        []
+        [],
     );
     const [loading, setLoading] = useState(true);
     const [selectedExercise, setSelectedExercise] =
@@ -66,12 +66,19 @@ export default function WorkoutSessionPage() {
     }, [user, sessionId]);
 
     async function fetchWorkoutSession() {
+        if (!user) {
+            setLoading(false);
+            return;
+        }
+
         setLoading(true);
         try {
             // Fetch session
             const { data: sessionData, error: sessionError } = await supabase
                 .from("workout_sessions")
-                .select("*")
+                .select(
+                    "id, user_id, workout_template_id, name, workout_type, started_at, completed_at, notes, created_at",
+                )
                 .eq("id", sessionId)
                 .single();
 
@@ -83,75 +90,137 @@ export default function WorkoutSessionPage() {
                 .from("exercise_logs")
                 .select(
                     `
-          *,
-          exercise:exercises(*)
-        `
+          id,
+          workout_session_id,
+          exercise_id,
+          order_index,
+          target_reps_min,
+          target_reps_max,
+          rest_seconds,
+          notes,
+          created_at,
+          exercise:exercises(
+            id,
+            user_id,
+            name,
+            description,
+            muscle_group,
+            target_body_part,
+            is_unilateral,
+            created_at,
+            updated_at
+          )
+        `,
                 )
                 .eq("workout_session_id", sessionId)
                 .order("order_index");
 
             if (logsError) throw logsError;
 
-            // Fetch sets for each exercise log
-            const logsWithSets = await Promise.all(
-                (logsData || []).map(async (log) => {
-                    const { data: sets, error: setsError } = await supabase
+            if (!logsData || logsData.length === 0) {
+                setExerciseLogs([]);
+                setSelectedExercise(null);
+                setCurrentExerciseIndex(0);
+                return;
+            }
+
+            const exerciseLogIds = logsData.map((log) => log.id);
+
+            const { data: allSets, error: setsError } = await supabase
+                .from("set_logs")
+                .select(
+                    "id, exercise_log_id, set_number, reps, weight, rir, completed, side, created_at",
+                )
+                .in("exercise_log_id", exerciseLogIds)
+                .order("set_number");
+
+            if (setsError) throw setsError;
+
+            const setsByLogId = new Map<string, SetLog[]>();
+            (allSets || []).forEach((set) => {
+                const list = setsByLogId.get(set.exercise_log_id) || [];
+                list.push(set as SetLog);
+                setsByLogId.set(set.exercise_log_id, list);
+            });
+
+            const uniqueExerciseIds = Array.from(
+                new Set(logsData.map((log) => log.exercise_id)),
+            );
+
+            const { data: previousLogs, error: prevError } = await supabase
+                .from("exercise_logs")
+                .select(
+                    `
+                        id,
+                        exercise_id,
+                        workout_session_id,
+                        workout_sessions!inner(user_id, completed_at)
+                    `,
+                )
+                .in("exercise_id", uniqueExerciseIds)
+                .neq("workout_session_id", sessionId)
+                .eq("workout_sessions.user_id", user.id)
+                .not("workout_sessions.completed_at", "is", null)
+                .order("workout_sessions(completed_at)", {
+                    ascending: false,
+                });
+
+            if (prevError) {
+                console.error("Error fetching previous workouts:", prevError);
+            }
+
+            const latestPreviousLogByExerciseId = new Map<string, string>();
+            (previousLogs || []).forEach((log) => {
+                if (!latestPreviousLogByExerciseId.has(log.exercise_id)) {
+                    latestPreviousLogByExerciseId.set(log.exercise_id, log.id);
+                }
+            });
+
+            const previousLogIds = Array.from(
+                latestPreviousLogByExerciseId.values(),
+            );
+
+            let previousSetsByLogId = new Map<string, SetLog[]>();
+
+            if (previousLogIds.length > 0) {
+                const { data: previousSets, error: prevSetsError } =
+                    await supabase
                         .from("set_logs")
-                        .select("*")
-                        .eq("exercise_log_id", log.id)
+                        .select(
+                            "id, exercise_log_id, set_number, reps, weight, rir, completed, side, created_at",
+                        )
+                        .in("exercise_log_id", previousLogIds)
                         .order("set_number");
 
-                    if (setsError) throw setsError;
+                if (prevSetsError) {
+                    console.error(
+                        "Error fetching previous sets:",
+                        prevSetsError,
+                    );
+                } else {
+                    previousSetsByLogId = new Map<string, SetLog[]>();
+                    (previousSets || []).forEach((set) => {
+                        const list =
+                            previousSetsByLogId.get(set.exercise_log_id) || [];
+                        list.push(set as SetLog);
+                        previousSetsByLogId.set(set.exercise_log_id, list);
+                    });
+                }
+            }
 
-                    // Fetch previous workout data for this exercise
-                    const { data: previousWorkouts, error: prevError } =
-                        await supabase
-                            .from("exercise_logs")
-                            .select(
-                                `
-                            id,
-                            workout_session_id,
-                            workout_sessions!inner(completed_at)
-                        `
-                            )
-                            .eq("exercise_id", log.exercise_id)
-                            .neq("workout_session_id", sessionId)
-                            .not("workout_sessions.completed_at", "is", null)
-                            .order("workout_sessions(completed_at)", {
-                                ascending: false,
-                            })
-                            .limit(1);
+            const logsWithSets = logsData.map((log) => {
+                const previousLogId = latestPreviousLogByExerciseId.get(
+                    log.exercise_id,
+                );
 
-                    if (prevError)
-                        console.error(
-                            "Error fetching previous workout:",
-                            prevError
-                        );
-
-                    let previousSets: SetLog[] = [];
-                    if (previousWorkouts && previousWorkouts.length > 0) {
-                        const { data: prevSets, error: prevSetsError } =
-                            await supabase
-                                .from("set_logs")
-                                .select("*")
-                                .eq("exercise_log_id", previousWorkouts[0].id)
-                                .order("set_number");
-
-                        if (prevSetsError)
-                            console.error(
-                                "Error fetching previous sets:",
-                                prevSetsError
-                            );
-                        else previousSets = prevSets || [];
-                    }
-
-                    return {
-                        ...log,
-                        sets: sets || [],
-                        previousSets,
-                    };
-                })
-            );
+                return {
+                    ...log,
+                    sets: setsByLogId.get(log.id) || [],
+                    previousSets: previousLogId
+                        ? previousSetsByLogId.get(previousLogId) || []
+                        : [],
+                };
+            });
 
             setExerciseLogs(logsWithSets as ExerciseLogWithDetails[]);
 
@@ -169,26 +238,26 @@ export default function WorkoutSessionPage() {
             ) {
                 setCurrentExerciseIndex(urlExerciseIndex);
                 setSelectedExercise(
-                    logsWithSets[urlExerciseIndex] as ExerciseLogWithDetails
+                    logsWithSets[urlExerciseIndex] as ExerciseLogWithDetails,
                 );
             } else {
                 // Auto-select first incomplete exercise
                 const firstIncomplete = logsWithSets.find((log) =>
-                    log.sets.some((set: SetLog) => !set.completed)
+                    log.sets.some((set: SetLog) => !set.completed),
                 );
                 if (firstIncomplete) {
                     const index = logsWithSets.findIndex(
-                        (l) => l.id === firstIncomplete.id
+                        (l) => l.id === firstIncomplete.id,
                     );
                     setCurrentExerciseIndex(index);
                     setSelectedExercise(
-                        firstIncomplete as ExerciseLogWithDetails
+                        firstIncomplete as ExerciseLogWithDetails,
                     );
                     updateExerciseInUrl(index);
                 } else if (logsWithSets.length > 0) {
                     setCurrentExerciseIndex(0);
                     setSelectedExercise(
-                        logsWithSets[0] as ExerciseLogWithDetails
+                        logsWithSets[0] as ExerciseLogWithDetails,
                     );
                     updateExerciseInUrl(0);
                 }
@@ -214,9 +283,9 @@ export default function WorkoutSessionPage() {
                 prevLogs.map((log) => ({
                     ...log,
                     sets: log.sets.map((set) =>
-                        set.id === setId ? { ...set, ...updates } : set
+                        set.id === setId ? { ...set, ...updates } : set,
                     ),
-                }))
+                })),
             );
 
             // Update selected exercise if needed
@@ -228,10 +297,10 @@ export default function WorkoutSessionPage() {
                               sets: prev.sets.map((set) =>
                                   set.id === setId
                                       ? { ...set, ...updates }
-                                      : set
+                                      : set,
                               ),
                           }
-                        : null
+                        : null,
                 );
             }
         } catch (error) {
@@ -272,7 +341,7 @@ export default function WorkoutSessionPage() {
                 .delete()
                 .in(
                     "exercise_log_id",
-                    exerciseLogs.map((log) => log.id)
+                    exerciseLogs.map((log) => log.id),
                 );
 
             if (setsError) throw setsError;
@@ -355,11 +424,11 @@ export default function WorkoutSessionPage() {
     }
 
     const allSetsCompleted = exerciseLogs.every((log) =>
-        log.sets.every((set) => set.completed)
+        log.sets.every((set) => set.completed),
     );
 
     const completedExercises = exerciseLogs.filter((log) =>
-        log.sets.every((set) => set.completed)
+        log.sets.every((set) => set.completed),
     ).length;
     const progressPercentage =
         exerciseLogs.length > 0
@@ -436,7 +505,7 @@ export default function WorkoutSessionPage() {
                         <div className="overflow-y-auto overflow-x-hidden max-h-[calc(85vh-5rem)]">
                             {exerciseLogs.map((log, idx) => {
                                 const completedSets = log.sets.filter(
-                                    (s) => s.completed
+                                    (s) => s.completed,
                                 ).length;
                                 const totalSets = log.sets.length;
                                 const isComplete = completedSets === totalSets;
@@ -460,8 +529,8 @@ export default function WorkoutSessionPage() {
                                                     isComplete
                                                         ? "bg-gradient-to-br from-orange-500 to-orange-600 text-white"
                                                         : isCurrent
-                                                        ? "bg-blue-500/20 text-blue-400 border-2 border-blue-500/50"
-                                                        : "bg-neutral-800 text-neutral-500 border-2 border-neutral-700"
+                                                          ? "bg-blue-500/20 text-blue-400 border-2 border-blue-500/50"
+                                                          : "bg-neutral-800 text-neutral-500 border-2 border-neutral-700"
                                                 }`}
                                             >
                                                 {isComplete ? (
@@ -581,7 +650,7 @@ export default function WorkoutSessionPage() {
                                             <span className="px-2 py-1 rounded bg-neutral-800 text-neutral-300 border border-neutral-700">
                                                 Odpoczynek:{" "}
                                                 {formatSeconds(
-                                                    selectedExercise.rest_seconds
+                                                    selectedExercise.rest_seconds,
                                                 )}
                                             </span>
                                         )}
@@ -685,10 +754,10 @@ function SetInput({
     };
 
     const [reps, setReps] = useState<number | string>(() =>
-        getInitialValue("reps", set.reps || "")
+        getInitialValue("reps", set.reps || ""),
     );
     const [weight, setWeight] = useState<number | string>(() =>
-        getInitialValue("weight", set.weight || "")
+        getInitialValue("weight", set.weight || ""),
     );
     const [rir, setRir] = useState<number | string>(() => {
         const defaultRir =
@@ -734,7 +803,7 @@ function SetInput({
     const handleNumericInput = (
         value: string,
         setter: (value: string) => void,
-        allowDecimal = false
+        allowDecimal = false,
     ) => {
         // Allow empty string
         if (value === "") {

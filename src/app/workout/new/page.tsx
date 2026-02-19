@@ -28,7 +28,7 @@ export default function NewWorkoutPage() {
     const [exercises, setExercises] = useState<Exercise[]>([]);
     const [loading, setLoading] = useState(true);
     const [selectedTemplate, setSelectedTemplate] = useState<string | null>(
-        null
+        null,
     );
     const [customName, setCustomName] = useState("");
     const [workoutType, setWorkoutType] = useState<WorkoutType>("upper");
@@ -48,9 +48,16 @@ export default function NewWorkoutPage() {
             const [templatesRes, exercisesRes] = await Promise.all([
                 supabase
                     .from("workout_templates")
-                    .select("*")
+                    .select(
+                        "id, user_id, name, workout_type, description, created_at, updated_at",
+                    )
                     .order("created_at", { ascending: false }),
-                supabase.from("exercises").select("*").order("name"),
+                supabase
+                    .from("exercises")
+                    .select(
+                        "id, user_id, name, description, muscle_group, target_body_part, is_unilateral, created_at, updated_at",
+                    )
+                    .order("name"),
             ]);
 
             if (templatesRes.error) throw templatesRes.error;
@@ -124,7 +131,7 @@ export default function NewWorkoutPage() {
                 const { data, error } = await supabase
                     .from("workout_template_exercises")
                     .select(
-                        "exercise_id, sets_count, order_index, target_reps_min, target_reps_max, rest_seconds"
+                        "exercise_id, sets_count, order_index, target_reps_min, target_reps_max, rest_seconds",
                     )
                     .eq("workout_template_id", selectedTemplate)
                     .order("order_index");
@@ -246,8 +253,8 @@ export default function NewWorkoutPage() {
                                         rec.priority === "high"
                                             ? "border-red-500/30"
                                             : rec.priority === "moderate"
-                                            ? "border-yellow-500/30"
-                                            : "border-blue-500/30"
+                                              ? "border-yellow-500/30"
+                                              : "border-blue-500/30"
                                     }`}
                                     style={{
                                         boxShadow:
@@ -268,16 +275,16 @@ export default function NewWorkoutPage() {
                                                 rec.priority === "high"
                                                     ? "bg-red-500/20 text-red-400 border border-red-500/30"
                                                     : rec.priority ===
-                                                      "moderate"
-                                                    ? "bg-yellow-500/20 text-yellow-400 border border-yellow-500/30"
-                                                    : "bg-blue-500/20 text-blue-400 border border-blue-500/30"
+                                                        "moderate"
+                                                      ? "bg-yellow-500/20 text-yellow-400 border border-yellow-500/30"
+                                                      : "bg-blue-500/20 text-blue-400 border border-blue-500/30"
                                             }`}
                                         >
                                             {rec.priority === "high"
                                                 ? "Wysoki"
                                                 : rec.priority === "moderate"
-                                                ? "Średni"
-                                                : "Niski"}
+                                                  ? "Średni"
+                                                  : "Niski"}
                                         </span>
                                     </div>
                                     <div className="flex flex-wrap gap-2 mt-3">
@@ -287,7 +294,7 @@ export default function NewWorkoutPage() {
                                                 onClick={() => {
                                                     if (
                                                         !selectedExercises.includes(
-                                                            ex.id
+                                                            ex.id,
                                                         )
                                                     ) {
                                                         setSelectedExercises([

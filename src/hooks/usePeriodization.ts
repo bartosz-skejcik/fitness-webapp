@@ -58,7 +58,7 @@ export function usePeriodization(weekCount: number = 12) {
             // Fetch workout sessions
             const { data: sessions, error: sessionsError } = await supabase
                 .from("workout_sessions")
-                .select("*")
+                .select("id, started_at")
                 .eq("user_id", user.id)
                 .gte("started_at", startDate.toISOString())
                 .order("started_at", { ascending: true });
@@ -82,7 +82,7 @@ export function usePeriodization(weekCount: number = 12) {
             const sessionIds = sessions.map((s) => s.id);
             const { data: exerciseLogs, error: logsError } = await supabase
                 .from("exercise_logs")
-                .select("*")
+                .select("id, workout_session_id")
                 .in("workout_session_id", sessionIds);
 
             if (logsError) throw logsError;
@@ -91,7 +91,7 @@ export function usePeriodization(weekCount: number = 12) {
             const exerciseLogIds = exerciseLogs?.map((e) => e.id) || [];
             const { data: setLogs, error: setLogsError } = await supabase
                 .from("set_logs")
-                .select("*")
+                .select("exercise_log_id, reps, weight")
                 .in("exercise_log_id", exerciseLogIds);
 
             if (setLogsError) throw setLogsError;
@@ -100,7 +100,7 @@ export function usePeriodization(weekCount: number = 12) {
             const weekMetrics = calculateWeeklyMetrics(
                 sessions as WorkoutSession[],
                 exerciseLogs as ExerciseLog[],
-                setLogs as SetLog[]
+                setLogs as SetLog[],
             );
 
             // Identify training phases
@@ -112,7 +112,7 @@ export function usePeriodization(weekCount: number = 12) {
                 ? Math.floor(
                       (new Date().getTime() -
                           new Date(currentPhase.weekStart).getTime()) /
-                          (7 * 24 * 60 * 60 * 1000)
+                          (7 * 24 * 60 * 60 * 1000),
                   )
                 : 0;
 
@@ -120,7 +120,7 @@ export function usePeriodization(weekCount: number = 12) {
                 getPhaseRecommendation(
                     currentPhase,
                     weeksSincePhaseChange,
-                    phases
+                    phases,
                 );
 
             setSummary({
@@ -143,7 +143,7 @@ export function usePeriodization(weekCount: number = 12) {
 function calculateWeeklyMetrics(
     sessions: WorkoutSession[],
     exerciseLogs: ExerciseLog[],
-    setLogs: SetLog[]
+    setLogs: SetLog[],
 ): WeekMetrics[] {
     const weekMap = new Map<string, WeekMetrics>();
 
@@ -167,12 +167,12 @@ function calculateWeeklyMetrics(
 
         // Get sets for this session
         const sessionExercises = exerciseLogs.filter(
-            (e) => e.workout_session_id === session.id
+            (e) => e.workout_session_id === session.id,
         );
 
         sessionExercises.forEach((exercise) => {
             const exerciseSets = setLogs.filter(
-                (s) => s.exercise_log_id === exercise.id
+                (s) => s.exercise_log_id === exercise.id,
             );
 
             exerciseSets.forEach((set) => {
@@ -200,7 +200,7 @@ function calculateWeeklyMetrics(
 
     return Array.from(weekMap.values()).sort(
         (a, b) =>
-            new Date(a.weekStart).getTime() - new Date(b.weekStart).getTime()
+            new Date(a.weekStart).getTime() - new Date(b.weekStart).getTime(),
     );
 }
 
@@ -229,7 +229,7 @@ function identifyPhases(weekMetrics: WeekMetrics[]): TrainingPhase[] {
             const prevPhaseType = classifyWeek(
                 weekMetrics[i - 1],
                 avgVolume,
-                avgIntensity
+                avgIntensity,
             );
 
             if (phaseType !== prevPhaseType || i === weekMetrics.length - 1) {
@@ -237,14 +237,14 @@ function identifyPhases(weekMetrics: WeekMetrics[]): TrainingPhase[] {
                 const endIdx = i === weekMetrics.length - 1 ? i : i - 1;
                 const phaseWeeks = weekMetrics.slice(
                     currentPhaseStart,
-                    endIdx + 1
+                    endIdx + 1,
                 );
 
                 const phase = createPhase(
                     prevPhaseType,
                     weekMetrics[currentPhaseStart].weekStart,
                     weekMetrics[endIdx].weekStart,
-                    phaseWeeks
+                    phaseWeeks,
                 );
 
                 phases.push(phase);
@@ -259,14 +259,14 @@ function identifyPhases(weekMetrics: WeekMetrics[]): TrainingPhase[] {
         const phaseType = classifyWeek(
             weekMetrics[currentPhaseStart],
             avgVolume,
-            avgIntensity
+            avgIntensity,
         );
 
         const phase = createPhase(
             phaseType,
             weekMetrics[currentPhaseStart].weekStart,
             weekMetrics[weekMetrics.length - 1].weekStart,
-            phaseWeeks
+            phaseWeeks,
         );
 
         phases.push(phase);
@@ -278,7 +278,7 @@ function identifyPhases(weekMetrics: WeekMetrics[]): TrainingPhase[] {
 function classifyWeek(
     week: WeekMetrics,
     avgVolume: number,
-    avgIntensity: number
+    avgIntensity: number,
 ): PhaseType {
     const volumeRatio = week.totalVolume / avgVolume;
     const intensityRatio = week.averageIntensity / avgIntensity;
@@ -306,7 +306,7 @@ function createPhase(
     type: PhaseType,
     weekStart: string,
     weekEnd: string,
-    weeks: WeekMetrics[]
+    weeks: WeekMetrics[],
 ): TrainingPhase {
     const totalVolume = weeks.reduce((sum, w) => sum + w.totalVolume, 0);
     const avgIntensity =
@@ -366,7 +366,7 @@ function createPhase(
 function getPhaseRecommendation(
     currentPhase: TrainingPhase | null,
     weeksSincePhaseChange: number,
-    phaseHistory: TrainingPhase[]
+    phaseHistory: TrainingPhase[],
 ): { recommendedNextPhase: PhaseType; recommendation: string } {
     if (!currentPhase) {
         return {

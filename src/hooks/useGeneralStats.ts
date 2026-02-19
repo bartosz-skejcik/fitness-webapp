@@ -50,23 +50,25 @@ export function useGeneralStats(userId: string | undefined) {
                 // Fetch all workout sessions
                 const { data: sessions, error: sessionsError } = await supabase
                     .from("workout_sessions")
-                    .select("*")
+                    .select(
+                        "id, user_id, workout_template_id, name, workout_type, started_at, completed_at, notes, created_at",
+                    )
                     .eq("user_id", userId)
                     .order("started_at", { ascending: false });
 
                 if (sessionsError) throw sessionsError;
 
                 const completedSessions = (sessions || []).filter(
-                    (s) => s.completed_at
+                    (s) => s.completed_at,
                 ) as WorkoutSession[];
 
                 // Calculate workout durations
                 const now = new Date();
                 const weekAgo = new Date(
-                    now.getTime() - 7 * 24 * 60 * 60 * 1000
+                    now.getTime() - 7 * 24 * 60 * 60 * 1000,
                 );
                 const monthAgo = new Date(
-                    now.getTime() - 30 * 24 * 60 * 60 * 1000
+                    now.getTime() - 30 * 24 * 60 * 60 * 1000,
                 );
 
                 let totalTimeAllTime = 0;
@@ -153,7 +155,7 @@ export function useGeneralStats(userId: string | undefined) {
                 const sortedSessions = [...completedSessions].sort(
                     (a, b) =>
                         new Date(b.started_at).getTime() -
-                        new Date(a.started_at).getTime()
+                        new Date(a.started_at).getTime(),
                 );
 
                 // Current streak
@@ -167,7 +169,7 @@ export function useGeneralStats(userId: string | undefined) {
 
                     const daysDiff = Math.floor(
                         (today.getTime() - sessionDate.getTime()) /
-                            (1000 * 60 * 60 * 24)
+                            (1000 * 60 * 60 * 24),
                     );
 
                     if (
@@ -194,7 +196,7 @@ export function useGeneralStats(userId: string | undefined) {
                     } else {
                         const daysDiff = Math.floor(
                             (lastDate.getTime() - sessionDate.getTime()) /
-                                (1000 * 60 * 60 * 24)
+                                (1000 * 60 * 60 * 24),
                         );
 
                         if (daysDiff === 1) {
@@ -226,7 +228,7 @@ export function useGeneralStats(userId: string | undefined) {
             } catch (err) {
                 console.error("Error fetching general stats:", err);
                 setError(
-                    err instanceof Error ? err : new Error("Unknown error")
+                    err instanceof Error ? err : new Error("Unknown error"),
                 );
             } finally {
                 setLoading(false);

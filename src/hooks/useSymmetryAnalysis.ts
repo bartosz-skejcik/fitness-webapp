@@ -79,7 +79,7 @@ export function useSymmetryAnalysis(weekCount: number = 12) {
                         name,
                         is_unilateral
                     )
-                `
+                `,
                 )
                 .in("workout_session_id", sessionIds)
                 .eq("exercises.is_unilateral", true);
@@ -102,7 +102,7 @@ export function useSymmetryAnalysis(weekCount: number = 12) {
             // Get all set logs for these exercises
             const { data: setLogs, error: setsError } = await supabase
                 .from("set_logs")
-                .select("*")
+                .select("exercise_log_id, reps, weight, side")
                 .in("exercise_log_id", exerciseLogIds)
                 .eq("completed", true)
                 .not("side", "is", null);
@@ -133,7 +133,7 @@ export function useSymmetryAnalysis(weekCount: number = 12) {
 
             setLogs?.forEach((set) => {
                 const log = exerciseLogs.find(
-                    (l) => l.id === set.exercise_log_id
+                    (l) => l.id === set.exercise_log_id,
                 );
                 if (log) {
                     const metric = exerciseMetrics.get(log.exercise_id);
@@ -158,25 +158,25 @@ export function useSymmetryAnalysis(weekCount: number = 12) {
 
                 const leftVolume = leftSets.reduce(
                     (sum, set) => sum + set.reps * (set.weight || 0),
-                    0
+                    0,
                 );
                 const rightVolume = rightSets.reduce(
                     (sum, set) => sum + set.reps * (set.weight || 0),
-                    0
+                    0,
                 );
 
                 const leftAvgWeight =
                     leftSets.length > 0
                         ? leftSets.reduce(
                               (sum, set) => sum + (set.weight || 0),
-                              0
+                              0,
                           ) / leftSets.length
                         : 0;
                 const rightAvgWeight =
                     rightSets.length > 0
                         ? rightSets.reduce(
                               (sum, set) => sum + (set.weight || 0),
-                              0
+                              0,
                           ) / rightSets.length
                         : 0;
 
@@ -203,15 +203,15 @@ export function useSymmetryAnalysis(weekCount: number = 12) {
                     imbalancePercentage < 10
                         ? "balanced"
                         : leftVolume > rightVolume
-                        ? "left"
-                        : "right";
+                          ? "left"
+                          : "right";
 
                 const riskLevel: "low" | "moderate" | "high" =
                     imbalancePercentage < 15
                         ? "low"
                         : imbalancePercentage < 25
-                        ? "moderate"
-                        : "high";
+                          ? "moderate"
+                          : "high";
 
                 metrics.push({
                     exerciseId: data.exerciseId,
@@ -232,18 +232,18 @@ export function useSymmetryAnalysis(weekCount: number = 12) {
 
             // Sort by imbalance percentage (worst first)
             metrics.sort(
-                (a, b) => b.imbalancePercentage - a.imbalancePercentage
+                (a, b) => b.imbalancePercentage - a.imbalancePercentage,
             );
 
             const exercisesWithImbalance = metrics.filter(
-                (m) => m.imbalancePercentage >= 15
+                (m) => m.imbalancePercentage >= 15,
             ).length;
 
             const averageImbalance =
                 metrics.length > 0
                     ? metrics.reduce(
                           (sum, m) => sum + m.imbalancePercentage,
-                          0
+                          0,
                       ) / metrics.length
                     : 0;
 

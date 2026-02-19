@@ -50,7 +50,9 @@ export function useExerciseRecommendations() {
             // Fetch all user exercises
             const { data: allExercises } = await supabase
                 .from("exercises")
-                .select("*")
+                .select(
+                    "id, user_id, name, description, muscle_group, target_body_part, is_unilateral, created_at, updated_at",
+                )
                 .eq("user_id", user.id);
 
             if (
@@ -67,16 +69,17 @@ export function useExerciseRecommendations() {
 
             const { data: exerciseLogs } = await supabase
                 .from("exercise_logs")
-                .select("*")
+                .select("id, workout_session_id, exercise_id")
                 .in("workout_session_id", sessionIds);
 
             const { data: setLogs } = await supabase
                 .from("set_logs")
-                .select("*")
+                .select("exercise_log_id, reps, weight")
                 .in(
                     "exercise_log_id",
-                    (exerciseLogs || []).map((e) => e.id)
-                );
+                    (exerciseLogs || []).map((e) => e.id),
+                )
+                .eq("completed", true);
 
             // Calculate metrics per body part
             const bodyPartMetrics = new Map<
@@ -107,7 +110,7 @@ export function useExerciseRecommendations() {
 
                 // Find logs for this exercise
                 const exerciseLogsForThis = (exerciseLogs || []).filter(
-                    (log) => log.exercise_id === exercise.id
+                    (log) => log.exercise_id === exercise.id,
                 );
 
                 if (exerciseLogsForThis.length > 0) {
@@ -116,7 +119,7 @@ export function useExerciseRecommendations() {
                     // Find last trained date
                     exerciseLogsForThis.forEach((log) => {
                         const session = sessions.find(
-                            (s) => s.id === log.workout_session_id
+                            (s) => s.id === log.workout_session_id,
                         );
                         if (session) {
                             const sessionDate = new Date(session.started_at);
@@ -130,7 +133,7 @@ export function useExerciseRecommendations() {
 
                         // Calculate volume
                         const sets = (setLogs || []).filter(
-                            (set) => set.exercise_log_id === log.id
+                            (set) => set.exercise_log_id === log.id,
                         );
                         sets.forEach((set) => {
                             if (set.weight && set.reps) {
@@ -143,7 +146,7 @@ export function useExerciseRecommendations() {
 
             // Calculate average volume across all body parts
             const volumes = Array.from(bodyPartMetrics.values()).map(
-                (m) => m.volume
+                (m) => m.volume,
             );
             const avgVolume =
                 volumes.length > 0
@@ -157,7 +160,7 @@ export function useExerciseRecommendations() {
                 const daysSinceTraining = metrics.lastTrained
                     ? Math.floor(
                           (now.getTime() - metrics.lastTrained.getTime()) /
-                              (1000 * 60 * 60 * 24)
+                              (1000 * 60 * 60 * 24),
                       )
                     : 999;
 
@@ -169,7 +172,7 @@ export function useExerciseRecommendations() {
                 // Only recommend if undertrained or low volume
                 if (daysSinceTraining > 7 || volumeDeficit > 20) {
                     const bodyPartExercises = allExercises.filter(
-                        (ex) => ex.target_body_part === bodyPart
+                        (ex) => ex.target_body_part === bodyPart,
                     );
 
                     let priority: "high" | "moderate" | "low" = "low";
@@ -184,7 +187,7 @@ export function useExerciseRecommendations() {
                     } else if (volumeDeficit > 40) {
                         priority = "high";
                         reason = `Objętość o ${volumeDeficit.toFixed(
-                            0
+                            0,
                         )}% niższa od średniej`;
                     } else if (volumeDeficit > 20) {
                         priority = "moderate";

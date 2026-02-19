@@ -55,12 +55,12 @@ export function useDashboardInsights() {
 
             const { data: exercises } = await supabase
                 .from("exercises")
-                .select("*")
+                .select("id, name, target_body_part")
                 .eq("user_id", user.id);
 
             const { data: exerciseLogs } = await supabase
                 .from("exercise_logs")
-                .select("*")
+                .select("id, workout_session_id, exercise_id")
                 .in("workout_session_id", sessionIds);
 
             if (!exerciseLogs || exerciseLogs.length === 0) {
@@ -72,8 +72,30 @@ export function useDashboardInsights() {
 
             const { data: setLogs } = await supabase
                 .from("set_logs")
-                .select("*")
-                .in("exercise_log_id", exerciseLogIds);
+                .select("exercise_log_id, reps, weight")
+                .in("exercise_log_id", exerciseLogIds)
+                .eq("completed", true);
+
+            const exerciseById = new Map(
+                (exercises || []).map((exercise) => [exercise.id, exercise]),
+            );
+            const sessionById = new Map(
+                sessions.map((session) => [session.id, session]),
+            );
+            const setsByLogId = new Map<
+                string,
+                Array<{
+                    exercise_log_id: string;
+                    reps: number;
+                    weight: number | null;
+                }>
+            >();
+
+            (setLogs || []).forEach((set) => {
+                const existing = setsByLogId.get(set.exercise_log_id) || [];
+                existing.push(set);
+                setsByLogId.set(set.exercise_log_id, existing);
+            });
 
             // Calculate body part volumes
             const bodyPartVolumes = new Map<TargetBodyPart, number>();
@@ -84,15 +106,11 @@ export function useDashboardInsights() {
             >();
 
             exerciseLogs.forEach((log) => {
-                const exercise = exercises?.find(
-                    (e) => e.id === log.exercise_id
-                );
+                const exercise = exerciseById.get(log.exercise_id);
                 if (!exercise || !exercise.target_body_part) return;
 
                 const bodyPart = exercise.target_body_part;
-                const session = sessions.find(
-                    (s) => s.id === log.workout_session_id
-                );
+                const session = sessionById.get(log.workout_session_id);
 
                 if (session) {
                     const sessionDate = new Date(session.started_at);
@@ -103,15 +121,14 @@ export function useDashboardInsights() {
                     }
                 }
 
-                const logSets =
-                    setLogs?.filter((s) => s.exercise_log_id === log.id) || [];
+                const logSets = setsByLogId.get(log.id) || [];
 
                 logSets.forEach((set) => {
                     if (set.weight && set.reps) {
                         const volume = set.weight * set.reps;
                         bodyPartVolumes.set(
                             bodyPart,
-                            (bodyPartVolumes.get(bodyPart) || 0) + volume
+                            (bodyPartVolumes.get(bodyPart) || 0) + volume,
                         );
 
                         // Track PRs
@@ -155,15 +172,15 @@ export function useDashboardInsights() {
                             bodyPart: weaker,
                             title: "Dysproporcja wykryta",
                             description: `${getBodyPartLabel(
-                                stronger
+                                stronger,
                             )} jest o ${percentage}% silniejszy`,
                             value: `${percentage}%`,
                             severity:
                                 ratio > 1.5
                                     ? "high"
                                     : ratio > 1.35
-                                    ? "moderate"
-                                    : "low",
+                                      ? "moderate"
+                                      : "low",
                         };
                     }
                 }
@@ -180,7 +197,8 @@ export function useDashboardInsights() {
 
             bodyPartLastTrained.forEach((lastDate, bodyPart) => {
                 const daysSince = Math.floor(
-                    (now.getTime() - lastDate.getTime()) / (1000 * 60 * 60 * 24)
+                    (now.getTime() - lastDate.getTime()) /
+                        (1000 * 60 * 60 * 24),
                 );
 
                 if (daysSince > maxDaysSinceTraining && daysSince > 7) {
@@ -196,8 +214,8 @@ export function useDashboardInsights() {
                             daysSince > 30
                                 ? "high"
                                 : daysSince > 14
-                                ? "moderate"
-                                : "low",
+                                  ? "moderate"
+                                  : "low",
                     };
                 }
             });
@@ -209,7 +227,7 @@ export function useDashboardInsights() {
             // 3. Recent PR
             if (bodyPartPRs.size > 0) {
                 const sortedPRs = Array.from(bodyPartPRs.entries()).sort(
-                    (a, b) => b[1].weight - a[1].weight
+                    (a, b) => b[1].weight - a[1].weight,
                 );
 
                 const [bodyPart, prData] = sortedPRs[0];
@@ -227,7 +245,7 @@ export function useDashboardInsights() {
             // 4. Best performing body part (highest volume)
             if (bodyPartVolumes.size > 0) {
                 const sortedVolumes = Array.from(
-                    bodyPartVolumes.entries()
+                    bodyPartVolumes.entries(),
                 ).sort((a, b) => b[1] - a[1]);
 
                 const [bodyPart, volume] = sortedVolumes[0];

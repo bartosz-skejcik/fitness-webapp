@@ -112,7 +112,7 @@ export function useInjuryRisk(weekCount: number = 12) {
                         name,
                         target_body_part
                     )
-                `
+                `,
                 )
                 .in("workout_session_id", sessionIds);
 
@@ -122,7 +122,7 @@ export function useInjuryRisk(weekCount: number = 12) {
             const exerciseLogIds = exerciseLogs?.map((log) => log.id) || [];
             const { data: setLogs, error: setsError } = await supabase
                 .from("set_logs")
-                .select("*")
+                .select("exercise_log_id, reps, weight")
                 .in("exercise_log_id", exerciseLogIds)
                 .eq("completed", true);
 
@@ -132,28 +132,28 @@ export function useInjuryRisk(weekCount: number = 12) {
             const volumeSpikesFactors = await detectVolumeSpikes(
                 sessions as unknown as WorkoutSession[],
                 exerciseLogs as unknown as ExerciseLog[],
-                setLogs || []
+                setLogs || [],
             );
             factors.push(...volumeSpikesFactors);
 
             // 2. Check for muscle imbalances
             const imbalanceFactors = await detectImbalances(
                 (exerciseLogs || []) as unknown as ExerciseLog[],
-                setLogs || []
+                setLogs || [],
             );
             factors.push(...imbalanceFactors);
 
             // 3. Check for overtraining indicators
             const overtrainingFactors = detectOvertraining(
                 sessions as unknown as WorkoutSession[],
-                setLogs || []
+                setLogs || [],
             );
             factors.push(...overtrainingFactors);
 
             // 4. Check for neglected stabilizers
             const stabilizerFactors = detectNeglectedStabilizers(
                 (exerciseLogs || []) as unknown as ExerciseLog[],
-                setLogs || []
+                setLogs || [],
             );
             factors.push(...stabilizerFactors);
 
@@ -169,10 +169,10 @@ export function useInjuryRisk(weekCount: number = 12) {
                 volumeSpikes: factors.filter((f) => f.type === "volume_spike"),
                 imbalances: factors.filter((f) => f.type === "imbalance"),
                 overtrainingIndicators: factors.filter(
-                    (f) => f.type === "overtraining"
+                    (f) => f.type === "overtraining",
                 ),
                 neglectedStabilizers: factors.filter(
-                    (f) => f.type === "neglected_stabilizer"
+                    (f) => f.type === "neglected_stabilizer",
                 ),
             });
         } catch (error) {
@@ -186,7 +186,7 @@ export function useInjuryRisk(weekCount: number = 12) {
     function detectVolumeSpikes(
         sessions: WorkoutSession[],
         exerciseLogs: ExerciseLog[],
-        setLogs: SetLog[]
+        setLogs: SetLog[],
     ): InjuryRiskFactor[] {
         const factors: InjuryRiskFactor[] = [];
 
@@ -202,7 +202,7 @@ export function useInjuryRisk(weekCount: number = 12) {
             const weekNumber = Math.floor(
                 (new Date(session.completed_at).getTime() -
                     new Date(sessions[0].completed_at).getTime()) /
-                    (7 * 24 * 60 * 60 * 1000)
+                    (7 * 24 * 60 * 60 * 1000),
             );
 
             if (!weeklyData.has(weekNumber)) {
@@ -210,17 +210,17 @@ export function useInjuryRisk(weekCount: number = 12) {
             }
 
             const sessionLogs = exerciseLogs?.filter(
-                (log) => log.workout_session_id === session.id
+                (log) => log.workout_session_id === session.id,
             );
             const sessionLogIds = sessionLogs?.map((log) => log.id) || [];
             const sessionSets = setLogs?.filter((set) =>
-                sessionLogIds.includes(set.exercise_log_id)
+                sessionLogIds.includes(set.exercise_log_id),
             );
 
             const sessionVolume =
                 sessionSets?.reduce(
                     (sum, set) => sum + set.reps * (set.weight || 0),
-                    0
+                    0,
                 ) || 0;
 
             const week = weeklyData.get(weekNumber)!;
@@ -230,7 +230,7 @@ export function useInjuryRisk(weekCount: number = 12) {
 
         // Check for spikes (>30% increase)
         const weeks = Array.from(weeklyData.entries()).sort(
-            (a, b) => a[0] - b[0]
+            (a, b) => a[0] - b[0],
         );
         for (let i = 1; i < weeks.length; i++) {
             const prevVolume = weeks[i - 1][1].volume;
@@ -244,7 +244,7 @@ export function useInjuryRisk(weekCount: number = 12) {
                         type: "volume_spike",
                         severity: "high",
                         description: `Gwałtowny wzrost objętości treningowej o ${increase.toFixed(
-                            0
+                            0,
                         )}% w tygodniu ${i + 1}`,
                         recommendation:
                             "Zmniejsz objętość treningową o 20-30% w następnym tygodniu aby dać ciału czas na adaptację.",
@@ -255,7 +255,7 @@ export function useInjuryRisk(weekCount: number = 12) {
                         type: "volume_spike",
                         severity: "moderate",
                         description: `Znaczący wzrost objętości treningowej o ${increase.toFixed(
-                            0
+                            0,
                         )}% w tygodniu ${i + 1}`,
                         recommendation:
                             "Monitoruj zmęczenie i rozważ stabilizację objętości w następnym tygodniu.",
@@ -270,7 +270,7 @@ export function useInjuryRisk(weekCount: number = 12) {
 
     function detectImbalances(
         exerciseLogs: ExerciseLog[],
-        setLogs: SetLog[]
+        setLogs: SetLog[],
     ): InjuryRiskFactor[] {
         const factors: InjuryRiskFactor[] = [];
 
@@ -282,17 +282,17 @@ export function useInjuryRisk(weekCount: number = 12) {
             if (!bodyPart) return;
 
             const logSets = setLogs?.filter(
-                (set) => set.exercise_log_id === log.id
+                (set) => set.exercise_log_id === log.id,
             );
             const volume =
                 logSets?.reduce(
                     (sum, set) => sum + set.reps * (set.weight || 0),
-                    0
+                    0,
                 ) || 0;
 
             bodyPartVolumes.set(
                 bodyPart,
-                (bodyPartVolumes.get(bodyPart) || 0) + volume
+                (bodyPartVolumes.get(bodyPart) || 0) + volume,
             );
         });
 
@@ -319,7 +319,7 @@ export function useInjuryRisk(weekCount: number = 12) {
                     severity: "high",
                     bodyPart: vol1 > vol2 ? muscle1 : muscle2,
                     description: `Znacząca dysproporcja między ${muscle1} i ${muscle2} (${difference.toFixed(
-                        0
+                        0,
                     )}%)`,
                     recommendation: `Zwiększ objętość treningową dla ${
                         vol1 < vol2 ? muscle1 : muscle2
@@ -332,7 +332,7 @@ export function useInjuryRisk(weekCount: number = 12) {
                     severity: "moderate",
                     bodyPart: vol1 > vol2 ? muscle1 : muscle2,
                     description: `Dysproporcja między ${muscle1} i ${muscle2} (${difference.toFixed(
-                        0
+                        0,
                     )}%)`,
                     recommendation: `Rozważ dodanie 1-2 ćwiczeń dla ${
                         vol1 < vol2 ? muscle1 : muscle2
@@ -347,7 +347,7 @@ export function useInjuryRisk(weekCount: number = 12) {
 
     function detectOvertraining(
         sessions: WorkoutSession[],
-        setLogs: SetLog[]
+        setLogs: SetLog[],
     ): InjuryRiskFactor[] {
         const factors: InjuryRiskFactor[] = [];
 
@@ -355,7 +355,7 @@ export function useInjuryRisk(weekCount: number = 12) {
         const recentWeek = new Date();
         recentWeek.setDate(recentWeek.getDate() - 7);
         const recentSessions = sessions.filter(
-            (s) => s.completed_at && new Date(s.completed_at) >= recentWeek
+            (s) => s.completed_at && new Date(s.completed_at) >= recentWeek,
         );
 
         if (recentSessions.length >= 7) {
@@ -399,13 +399,13 @@ export function useInjuryRisk(weekCount: number = 12) {
 
                 const weekSessionIds = weekSessions.map((s) => s.id);
                 const weekSets = setLogs?.filter((set) =>
-                    weekSessionIds.includes(set.exercise_log_id)
+                    weekSessionIds.includes(set.exercise_log_id),
                 );
 
                 const volume =
                     weekSets?.reduce(
                         (sum, set) => sum + set.reps * (set.weight || 0),
-                        0
+                        0,
                     ) || 0;
 
                 weeklyVolumes.push(volume);
@@ -442,7 +442,7 @@ export function useInjuryRisk(weekCount: number = 12) {
 
     function detectNeglectedStabilizers(
         exerciseLogs: ExerciseLog[],
-        setLogs: SetLog[]
+        setLogs: SetLog[],
     ): InjuryRiskFactor[] {
         const factors: InjuryRiskFactor[] = [];
 
@@ -451,7 +451,7 @@ export function useInjuryRisk(weekCount: number = 12) {
         const totalVolume =
             setLogs?.reduce(
                 (sum, set) => sum + set.reps * (set.weight || 0),
-                0
+                0,
             ) || 0;
 
         exerciseLogs?.forEach((log) => {
@@ -459,17 +459,17 @@ export function useInjuryRisk(weekCount: number = 12) {
             if (!bodyPart) return;
 
             const logSets = setLogs?.filter(
-                (set) => set.exercise_log_id === log.id
+                (set) => set.exercise_log_id === log.id,
             );
             const volume =
                 logSets?.reduce(
                     (sum, set) => sum + set.reps * (set.weight || 0),
-                    0
+                    0,
                 ) || 0;
 
             bodyPartVolumes.set(
                 bodyPart,
-                (bodyPartVolumes.get(bodyPart) || 0) + volume
+                (bodyPartVolumes.get(bodyPart) || 0) + volume,
             );
         });
 
@@ -494,7 +494,7 @@ export function useInjuryRisk(weekCount: number = 12) {
                     severity: "low",
                     bodyPart: stabilizer,
                     description: `Niski udział stabilizatora ${stabilizer} w treningu (${percentage.toFixed(
-                        1
+                        1,
                     )}%)`,
                     recommendation: `Rozważ dodanie większej ilości pracy dla ${stabilizer}.`,
                     value: percentage,
