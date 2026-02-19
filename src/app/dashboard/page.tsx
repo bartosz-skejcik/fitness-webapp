@@ -55,7 +55,12 @@ export default function DashboardPage() {
 
     async function fetchData() {
         try {
-            const [templatesRes, sessionsRes] = await Promise.all([
+            const [
+                templatesRes,
+                recentSessionsRes,
+                workoutStatsRes,
+                streakRes,
+            ] = await Promise.all([
                 supabase
                     .from("workout_templates")
                     .select(
@@ -69,93 +74,40 @@ export default function DashboardPage() {
                         "id, user_id, workout_template_id, name, workout_type, started_at, completed_at, notes, created_at",
                     )
                     .eq("user_id", user?.id)
-                    .order("started_at", { ascending: false }),
+                    .order("started_at", { ascending: false })
+                    .limit(5),
+                supabase
+                    .from("user_workout_stats")
+                    .select("total_workouts, weekly_workouts, total_volume")
+                    .eq("user_id", user?.id)
+                    .maybeSingle(),
+                supabase.rpc("calculate_user_streak", {
+                    p_user_id: user?.id,
+                }),
             ]);
 
             if (templatesRes.error) throw templatesRes.error;
+            if (recentSessionsRes.error) throw recentSessionsRes.error;
+            if (workoutStatsRes.error) throw workoutStatsRes.error;
+            if (streakRes.error) throw streakRes.error;
+
             setTemplates((templatesRes.data || []) as WorkoutTemplate[]);
-
-            const allSessions = sessionsRes.data || [];
-
-            if (sessionsRes.error) throw sessionsRes.error;
-
-            // Fetch recent workout sessions for display
-            const recentSessionsData = (allSessions || []).slice(0, 5);
-            setRecentSessions(recentSessionsData as WorkoutSession[]);
-
-            // Calculate stats
-            const now = new Date();
-            const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-
-            const weeklyWorkouts = (allSessions || []).filter(
-                (s) => new Date(s.started_at) >= weekAgo,
-            ).length;
-
-            // Calculate current streak
-            let streak = 0;
-            const sortedSessions = (allSessions || []).sort(
-                (a, b) =>
-                    new Date(b.started_at).getTime() -
-                    new Date(a.started_at).getTime(),
+            setRecentSessions(
+                (recentSessionsRes.data || []) as WorkoutSession[],
             );
 
-            const today = new Date();
-            today.setHours(0, 0, 0, 0);
-
-            for (let i = 0; i < sortedSessions.length; i++) {
-                const sessionDate = new Date(sortedSessions[i].started_at);
-                sessionDate.setHours(0, 0, 0, 0);
-
-                const daysDiff = Math.floor(
-                    (today.getTime() - sessionDate.getTime()) /
-                        (1000 * 60 * 60 * 24),
-                );
-
-                if (daysDiff === streak || (streak === 0 && daysDiff <= 1)) {
-                    streak++;
-                } else {
-                    break;
-                }
-            }
-
-            // Fetch exercise logs and sets for volume calculation
-            const sessionIds = (allSessions || []).map((s) => s.id);
-
-            if (sessionIds.length > 0) {
-                const { data: exerciseLogs } = await supabase
-                    .from("exercise_logs")
-                    .select("id")
-                    .in("workout_session_id", sessionIds);
-
-                const exerciseLogIds = (exerciseLogs || []).map((l) => l.id);
-
-                if (exerciseLogIds.length > 0) {
-                    const { data: sets } = await supabase
-                        .from("set_logs")
-                        .select("reps, weight")
-                        .in("exercise_log_id", exerciseLogIds)
-                        .eq("completed", true);
-
-                    const totalVolume = (sets || []).reduce(
-                        (sum, set) => sum + set.reps * (set.weight || 0),
-                        0,
-                    );
-
-                    setStats({
-                        totalWorkouts: (allSessions || []).length,
-                        weeklyWorkouts,
-                        totalVolume: Math.round(totalVolume),
-                        currentStreak: streak,
-                    });
-                } else {
-                    setStats({
-                        totalWorkouts: (allSessions || []).length,
-                        weeklyWorkouts,
-                        totalVolume: 0,
-                        currentStreak: streak,
-                    });
-                }
-            }
+            setStats({
+                totalWorkouts: Number(
+                    workoutStatsRes.data?.total_workouts || 0,
+                ),
+                weeklyWorkouts: Number(
+                    workoutStatsRes.data?.weekly_workouts || 0,
+                ),
+                totalVolume: Math.round(
+                    Number(workoutStatsRes.data?.total_volume || 0),
+                ),
+                currentStreak: Number(streakRes.data || 0),
+            });
         } catch (error) {
             console.error("Error fetching data:", error);
         } finally {
