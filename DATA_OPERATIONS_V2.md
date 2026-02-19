@@ -155,31 +155,36 @@ CREATE INDEX IF NOT EXISTS idx_workout_sessions_completed
 
 Eliminates 7+ queries on dashboard → 1 query returning 1 row.
 
+> **Bugs fixed (2026-02-19):**
+> - `COUNT(ws.id)` → `COUNT(DISTINCT ws.id)` and `COUNT(DISTINCT CASE ... THEN ws.id END)`: the JOIN to `exercise_logs` and `set_logs` multiplies session rows (one per set), causing massive overcounting. `DISTINCT` on the session ID de-duplicates.
+> - `weekly_workouts` and `total_volume` now use `date_trunc('week', NOW())` (Monday 00:00 of the current calendar week) instead of `NOW() - INTERVAL '7 days'`. The rolling-7-days approach would count e.g. only 3 days of the week if today is Wednesday.
+> - `total_volume` is now the **current week's volume**, not all-time. The column name is intentionally kept as `total_volume` for API compatibility.
+> - Removed the `refresh_user_workout_stats()` wrapper function — the trigger now calls `REFRESH MATERIALIZED VIEW CONCURRENTLY` directly, which is simpler and avoids an unnecessary indirection.
+
 ```sql
 CREATE MATERIALIZED VIEW IF NOT EXISTS user_workout_stats AS
 SELECT
     ws.user_id,
-    COUNT(ws.id) as total_workouts,
-    COUNT(CASE WHEN ws.started_at >= NOW() - INTERVAL '7 days' THEN 1 END) as weekly_workouts,
-    COALESCE(SUM(sl.reps * sl.weight), 0) as total_volume,
-    MAX(ws.started_at) as last_workout_at
+    COUNT(DISTINCT ws.id) AS total_workouts,
+    COUNT(DISTINCT CASE
+        WHEN ws.started_at >= date_trunc('week', NOW()) THEN ws.id
+    END) AS weekly_workouts,
+    COALESCE(SUM(
+        CASE WHEN ws.started_at >= date_trunc('week', NOW())
+            THEN sl.reps * sl.weight
+            ELSE 0
+        END
+    ), 0) AS total_volume,
+    MAX(ws.started_at) AS last_workout_at
 FROM workout_sessions ws
 LEFT JOIN exercise_logs el ON el.workout_session_id = ws.id
 LEFT JOIN set_logs sl ON sl.exercise_log_id = el.id AND sl.completed = true
 WHERE ws.completed_at IS NOT NULL
 GROUP BY ws.user_id;
 
--- Create index on the materialized view
+-- Create unique index (required for CONCURRENTLY refresh)
 CREATE UNIQUE INDEX IF NOT EXISTS idx_user_workout_stats_user
     ON user_workout_stats(user_id);
-
--- Refresh function (call after workout completion)
-CREATE OR REPLACE FUNCTION refresh_user_workout_stats()
-RETURNS void AS $$
-BEGIN
-    REFRESH MATERIALIZED VIEW CONCURRENTLY user_workout_stats;
-END;
-$$ LANGUAGE plpgsql;
 ```
 
 ### 3.3 Database Function: Current Streak
@@ -298,6 +303,11 @@ $$ LANGUAGE plpgsql;
 
 Fixes the N×4 query problem in the analytics goals tab.
 
+> **Bugs fixed (2026-02-19):**
+> - **Volume included sets from the wrong body part.** `set_logs` was joined directly to `exercise_logs`, so sets from exercises that *didn't* match the goal's body part were still summed. Added `AND e.id IS NOT NULL` to the `set_logs` join condition so only sets from matching exercises are aggregated.
+> - **Frequency counted all sessions, not just relevant ones.** `COUNT(DISTINCT ws.id)` counted every session in the timeframe, including ones with no exercises targeting the goal body part. Changed to `COUNT(DISTINCT CASE WHEN e.id IS NOT NULL THEN ws.id END)`.
+> - **Timeframe used rolling windows instead of calendar periods.** `weekly` now uses `date_trunc('week', NOW())` (Monday 00:00) and `monthly` uses `date_trunc('month', NOW())` (1st of the month). Added an `ELSE` clause to the `CASE` to prevent silent `NULL` comparisons for unknown timeframe values.
+
 ```sql
 CREATE OR REPLACE FUNCTION calculate_all_goal_progress(p_user_id UUID)
 RETURNS TABLE (
@@ -312,7 +322,7 @@ RETURNS TABLE (
 BEGIN
     RETURN QUERY
     SELECT
-        g.id as goal_id,
+        g.id AS goal_id,
         g.body_part,
         g.goal_type,
         g.target_value,
@@ -321,33 +331,35 @@ BEGIN
             WHEN g.goal_type = 'volume' THEN
                 COALESCE(SUM(sl.reps * sl.weight), 0)
             WHEN g.goal_type = 'frequency' THEN
-                COUNT(DISTINCT ws.id)::NUMERIC
+                COUNT(DISTINCT CASE WHEN e.id IS NOT NULL THEN ws.id END)::NUMERIC
             ELSE 0
-        END as current_value,
+        END AS current_value,
         CASE
             WHEN g.target_value > 0 THEN
                 ROUND(
                     (CASE
                         WHEN g.goal_type = 'volume' THEN COALESCE(SUM(sl.reps * sl.weight), 0)
-                        WHEN g.goal_type = 'frequency' THEN COUNT(DISTINCT ws.id)::NUMERIC
+                        WHEN g.goal_type = 'frequency' THEN COUNT(DISTINCT CASE WHEN e.id IS NOT NULL THEN ws.id END)::NUMERIC
                         ELSE 0
                     END) / g.target_value * 100,
                     1
                 )
             ELSE 0
-        END as progress_percentage
+        END AS progress_percentage
     FROM body_part_goals g
     LEFT JOIN workout_sessions ws ON ws.user_id = g.user_id
         AND ws.completed_at IS NOT NULL
-        AND ws.started_at >= NOW() - CASE
-            WHEN g.timeframe = 'weekly' THEN INTERVAL '7 days'
-            WHEN g.timeframe = 'monthly' THEN INTERVAL '30 days'
+        AND ws.started_at >= CASE
+            WHEN g.timeframe = 'weekly'  THEN date_trunc('week', NOW())
+            WHEN g.timeframe = 'monthly' THEN date_trunc('month', NOW())
+            ELSE NOW() - INTERVAL '0 days'
         END
     LEFT JOIN exercise_logs el ON el.workout_session_id = ws.id
     LEFT JOIN exercises e ON e.id = el.exercise_id
         AND e.target_body_part = g.body_part
     LEFT JOIN set_logs sl ON sl.exercise_log_id = el.id
         AND sl.completed = true
+        AND e.id IS NOT NULL
     WHERE g.user_id = p_user_id
         AND g.is_active = true
     GROUP BY g.id, g.body_part, g.goal_type, g.target_value, g.timeframe;
@@ -356,6 +368,8 @@ $$ LANGUAGE plpgsql;
 ```
 
 ### 3.7 Database Function: Friend Comparison Stats
+
+> **Bug fixed (2026-02-19):** The `LATERAL` subquery recomputed session volume once per outer row. Because `workout_sessions` is multiplied by `set_logs` due to the JOINs, the same `ws.id` triggered the lateral repeatedly with identical results. Replaced with a pre-aggregated CTE so each session's volume is computed exactly once.
 
 ```sql
 CREATE OR REPLACE FUNCTION get_comparison_stats(
@@ -374,23 +388,26 @@ RETURNS TABLE (
 ) AS $$
 BEGIN
     RETURN QUERY
+    WITH session_volumes AS (
+        SELECT
+            el.workout_session_id,
+            SUM(sl.reps * sl.weight) AS vol
+        FROM exercise_logs el
+        JOIN set_logs sl ON sl.exercise_log_id = el.id AND sl.completed = true
+        GROUP BY el.workout_session_id
+    )
     SELECT
-        ws.user_id as compared_user_id,
-        COUNT(DISTINCT ws.id) as total_workouts,
-        COUNT(sl.id) as total_sets,
-        COALESCE(SUM(sl.reps * sl.weight), 0) as total_volume,
-        COALESCE(SUM(sl.reps)::BIGINT, 0::BIGINT) as total_reps,
-        COALESCE(AVG(sl.weight) FILTER (WHERE sl.weight > 0), 0) as avg_weight,
-        COALESCE(MAX(session_vol.vol), 0) as best_session_volume
+        ws.user_id AS compared_user_id,
+        COUNT(DISTINCT ws.id) AS total_workouts,
+        COUNT(sl.id) AS total_sets,
+        COALESCE(SUM(sl.reps * sl.weight), 0) AS total_volume,
+        COALESCE(SUM(sl.reps)::BIGINT, 0::BIGINT) AS total_reps,
+        COALESCE(AVG(sl.weight) FILTER (WHERE sl.weight > 0), 0) AS avg_weight,
+        COALESCE(MAX(sv.vol), 0) AS best_session_volume
     FROM workout_sessions ws
     LEFT JOIN exercise_logs el ON el.workout_session_id = ws.id
     LEFT JOIN set_logs sl ON sl.exercise_log_id = el.id AND sl.completed = true
-    LEFT JOIN LATERAL (
-        SELECT SUM(sl2.reps * sl2.weight) as vol
-        FROM exercise_logs el2
-        JOIN set_logs sl2 ON sl2.exercise_log_id = el2.id AND sl2.completed = true
-        WHERE el2.workout_session_id = ws.id
-    ) session_vol ON true
+    LEFT JOIN session_volumes sv ON sv.workout_session_id = ws.id
     WHERE ws.user_id IN (p_user_id, p_friend_id)
         AND ws.completed_at IS NOT NULL
         AND ws.started_at >= NOW() - make_interval(days => p_days)
@@ -401,12 +418,14 @@ $$ LANGUAGE plpgsql;
 
 ### 3.8 Trigger: Auto-Refresh Stats on Workout Completion
 
+> **Bug fixed (2026-02-19):** The trigger called `refresh_user_workout_stats()`, a helper function that no longer exists (removed in 3.2). The trigger now calls `REFRESH MATERIALIZED VIEW CONCURRENTLY` directly. The `CONCURRENTLY` option requires the unique index from 3.2 to be present and allows the view to remain queryable during the refresh.
+
 ```sql
 CREATE OR REPLACE FUNCTION on_workout_completed()
 RETURNS TRIGGER AS $$
 BEGIN
     IF OLD.completed_at IS NULL AND NEW.completed_at IS NOT NULL THEN
-        PERFORM refresh_user_workout_stats();
+        REFRESH MATERIALIZED VIEW CONCURRENTLY user_workout_stats;
     END IF;
     RETURN NEW;
 END;
@@ -1746,13 +1765,13 @@ object StreakCalculator {
 | Optimization                             | Migration Required | Impact                                  |
 | ---------------------------------------- | ------------------ | --------------------------------------- |
 | Add 5 critical indexes                   | Yes                | 2-10x faster query execution            |
-| Materialized view `user_workout_stats`   | Yes                | Dashboard: 8 queries → 1                |
+| Materialized view `user_workout_stats`   | Yes (see 3.2)      | Dashboard: 8 queries → 1; fixed JOIN multiplication overcounting and calendar-week logic |
 | Function `calculate_user_streak()`       | Yes                | Server-side streak, no client iteration |
 | Function `get_dashboard_stats()`         | Yes                | Single RPC for all dashboard stats      |
 | Function `get_previous_workout_sets()`   | Yes                | Active workout: N×3 → 1 query           |
-| Function `calculate_all_goal_progress()` | Yes                | Goals tab: N×4 → 1 query                |
-| Function `get_comparison_stats()`        | Yes                | Friend comparison: 7 → 2 queries        |
-| Trigger `on_workout_completed`           | Yes                | Auto-refresh materialized view          |
+| Function `calculate_all_goal_progress()` | Yes (see 3.6)      | Goals tab: N×4 → 1 query; fixed body-part filtering and calendar-period logic |
+| Function `get_comparison_stats()`        | Yes (see 3.7)      | Friend comparison: 7 → 2 queries; replaced inefficient LATERAL with CTE |
+| Trigger `on_workout_completed`           | Yes (see 3.8)      | Auto-refresh materialized view; fixed missing function call |
 
 ### Android-Specific (Not Applicable to Web)
 
@@ -1786,61 +1805,46 @@ object StreakCalculator {
 
 ## 20. Implementation Priority
 
-### Phase 1: Database Migrations (Before Android Development)
+> **Status updated 2026-02-19.** The following screens are already complete and working: Login/Auth, Home Dashboard, Workout History, Start New Workout, Active Workout Session (both new workouts and viewing historical). The priority list below reflects what remains.
 
-**Effort: 1 day | Impact: Critical**
+### Phase 1: Database Migrations ✅ COMPLETE
 
-Apply all SQL from Section 3 to the Supabase database:
+All SQL from Section 3 has been applied including the bug-fix migration (2026-02-19).
 
-1. Critical indexes (5 min)
-2. Materialized view `user_workout_stats` (15 min)
-3. Function `calculate_user_streak()` (10 min)
-4. Function `get_dashboard_stats()` (10 min)
-5. Function `get_previous_workout_sets()` (15 min)
-6. Function `calculate_all_goal_progress()` (15 min)
-7. Function `get_comparison_stats()` (15 min)
-8. Trigger `on_workout_completed` (5 min)
+### Phase 2: Android Core Infrastructure ✅ COMPLETE (implied by working screens)
 
-### Phase 2: Android Core Infrastructure (Week 1-2)
+Project setup, Room, Supabase SDK, Auth flow, Navigation, NetworkMonitor, base Repository pattern.
 
-**Effort: 2 weeks | Impact: Foundation for everything**
+### Phase 3: Core Screens — IN PROGRESS
 
-1. Project setup: Hilt, Room, Supabase SDK, Navigation
-2. Room database with all entities and DAOs
-3. Supabase client configuration + auth flow
-4. `AuthRepository` + `AuthViewModel` + Login/Signup screens
-5. `NetworkMonitor` utility
-6. Base Repository pattern with sync logic
+**Completed:**
+- ✅ Login / Auth flow
+- ✅ Dashboard (Home)
+- ✅ Workout History
+- ✅ Start New Workout
+- ✅ Active Workout Session
 
-### Phase 3: Core Screens (Week 3-5)
+**Remaining (recommended order):**
 
-**Effort: 3 weeks | Impact: MVP functionality**
+1. **Exercises Management screen** — needed before templates work properly; users need to create/edit the exercise catalog that templates are built from.
+2. **Workout Templates List screen** — depends on exercises being manageable; uses Room cache + background sync.
+3. **Workout Template Detail / Edit screen** — differential save pattern (Section 10); depends on exercises.
+4. **Create New Workout Template screen** — depends on exercises + templates list.
 
-1. Dashboard screen (using `get_dashboard_stats()` RPC)
-2. Templates list + detail/edit screens
-3. Create new template screen
-4. Start new workout screen
-5. **Active workout session** (highest priority for data integrity)
-    - Room-first saves
-    - `get_previous_workout_sets()` RPC
-    - Pending sync queue
-    - WorkManager sync worker
-6. Exercises management screen
-
-### Phase 4: Social Features (Week 6-7)
+### Phase 4: Social Features (Week ~3-4 from now)
 
 **Effort: 2 weeks | Impact: Feature parity**
 
 1. Friends screen with Realtime notifications
 2. Friend comparison screen (using `get_comparison_stats()` RPC)
-3. Shared templates screen (existing VIEW + RPC)
+3. Shared templates screen (existing VIEW + `copy_shared_workout_template` RPC)
 
-### Phase 5: Analytics (Week 8-10)
+### Phase 5: Analytics (Week ~5-7 from now)
 
 **Effort: 3 weeks | Impact: Power user features**
 
 1. Shared `AnalyticsRepository` with base data caching
-2. `domain/util/` computation utilities
+2. `domain/util/` computation utilities (VolumeCalculator, ImbalanceDetector, EpleyOneRepMax, StreakCalculator)
 3. General stats tab
 4. Strength stats tab
 5. Trends stats tab
@@ -1850,13 +1854,13 @@ Apply all SQL from Section 3 to the Supabase database:
 9. Injury risk tab
 10. Periodization tab
 
-### Phase 6: Polish & Offline (Week 11-12)
+### Phase 6: Polish & Offline (Week ~8-9 from now)
 
 **Effort: 2 weeks | Impact: Production readiness**
 
-1. Full offline support for active workouts
-2. WorkManager periodic sync
-3. Stale data indicators
+1. Full offline support for active workouts (pending sync queue + WorkManager)
+2. WorkManager periodic background sync
+3. Stale data indicators in UI
 4. Error handling and retry logic
 5. Animations and transitions
 6. Performance profiling and optimization
