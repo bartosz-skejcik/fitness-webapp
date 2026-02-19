@@ -55,11 +55,22 @@ export default function DashboardPage() {
 
     async function fetchData() {
         try {
+            const now = new Date();
+            const currentWeekStart = new Date(now);
+            currentWeekStart.setHours(0, 0, 0, 0);
+            const day = currentWeekStart.getDay();
+            const diff = day === 0 ? -6 : 1 - day;
+            currentWeekStart.setDate(currentWeekStart.getDate() + diff);
+
+            const nextWeekStart = new Date(currentWeekStart);
+            nextWeekStart.setDate(nextWeekStart.getDate() + 7);
+
             const [
                 templatesRes,
                 recentSessionsRes,
                 workoutStatsRes,
                 streakRes,
+                weeklyCountRes,
             ] = await Promise.all([
                 supabase
                     .from("workout_templates")
@@ -84,12 +95,19 @@ export default function DashboardPage() {
                 supabase.rpc("calculate_user_streak", {
                     p_user_id: user?.id,
                 }),
+                supabase
+                    .from("workout_sessions")
+                    .select("id", { count: "exact", head: true })
+                    .eq("user_id", user?.id)
+                    .gte("started_at", currentWeekStart.toISOString())
+                    .lt("started_at", nextWeekStart.toISOString()),
             ]);
 
             if (templatesRes.error) throw templatesRes.error;
             if (recentSessionsRes.error) throw recentSessionsRes.error;
             if (workoutStatsRes.error) throw workoutStatsRes.error;
             if (streakRes.error) throw streakRes.error;
+            if (weeklyCountRes.error) throw weeklyCountRes.error;
 
             setTemplates((templatesRes.data || []) as WorkoutTemplate[]);
             setRecentSessions(
@@ -100,9 +118,7 @@ export default function DashboardPage() {
                 totalWorkouts: Number(
                     workoutStatsRes.data?.total_workouts || 0,
                 ),
-                weeklyWorkouts: Number(
-                    workoutStatsRes.data?.weekly_workouts || 0,
-                ),
+                weeklyWorkouts: Number(weeklyCountRes.count || 0),
                 totalVolume: Math.round(
                     Number(workoutStatsRes.data?.total_volume || 0),
                 ),

@@ -30,6 +30,15 @@ export interface TrendsStats {
     bestTime: string;
 }
 
+function getMondayWeekStart(date: Date): Date {
+    const d = new Date(date);
+    d.setHours(0, 0, 0, 0);
+    const day = d.getDay();
+    const diff = day === 0 ? -6 : 1 - day; // Sunday -> previous Monday
+    d.setDate(d.getDate() + diff);
+    return d;
+}
+
 export function useTrendsStats(userId: string | undefined) {
     const [stats, setStats] = useState<TrendsStats>({
         weeklyProgress: [],
@@ -57,13 +66,14 @@ export function useTrendsStats(userId: string | undefined) {
                 // Fetch workout sessions from the last 12 weeks
                 const twelveWeeksAgo = new Date();
                 twelveWeeksAgo.setDate(twelveWeeksAgo.getDate() - 12 * 7);
+                const twelveWeeksAgoStart = getMondayWeekStart(twelveWeeksAgo);
 
                 const { data: sessions, error: sessionsError } = await supabase
                     .from("workout_sessions")
                     .select("id, started_at")
                     .eq("user_id", userId)
                     .not("completed_at", "is", null)
-                    .gte("started_at", twelveWeeksAgo.toISOString())
+                    .gte("started_at", twelveWeeksAgoStart.toISOString())
                     .order("started_at", { ascending: true });
 
                 if (sessionsError) throw sessionsError;
@@ -79,7 +89,7 @@ export function useTrendsStats(userId: string | undefined) {
                 const { data: exerciseLogs } = await supabase
                     .from("exercise_logs")
                     .select(
-                        "id, exercise_id, workout_session_id, exercises(name)"
+                        "id, exercise_id, workout_session_id, exercises(name)",
                     )
                     .in("workout_session_id", sessionIds);
 
@@ -111,8 +121,7 @@ export function useTrendsStats(userId: string | undefined) {
 
                 sessions.forEach((session) => {
                     const date = new Date(session.started_at);
-                    const weekStart = new Date(date);
-                    weekStart.setDate(date.getDate() - date.getDay());
+                    const weekStart = getMondayWeekStart(date);
                     const weekKey = weekStart.toISOString().split("T")[0];
 
                     if (!weeklyMap.has(weekKey)) {
@@ -123,7 +132,7 @@ export function useTrendsStats(userId: string | undefined) {
 
                     // Calculate volume for this session
                     const sessionLogs = (exerciseLogs || []).filter(
-                        (log) => log.workout_session_id === session.id
+                        (log) => log.workout_session_id === session.id,
                     );
                     const logIds = sessionLogs.map((l) => l.id);
 
@@ -136,7 +145,7 @@ export function useTrendsStats(userId: string | undefined) {
 
                 // Convert to array and calculate improvements
                 const weeklyProgress: WeeklyData[] = Array.from(
-                    weeklyMap.entries()
+                    weeklyMap.entries(),
                 )
                     .sort((a, b) => a[0].localeCompare(b[0]))
                     .map(([weekStart, data], index, arr) => {
@@ -162,7 +171,7 @@ export function useTrendsStats(userId: string | undefined) {
                 (exerciseLogs || []).forEach((log) => {
                     exerciseFrequency.set(
                         log.exercise_id,
-                        (exerciseFrequency.get(log.exercise_id) || 0) + 1
+                        (exerciseFrequency.get(log.exercise_id) || 0) + 1,
                     );
                 });
 
@@ -174,7 +183,7 @@ export function useTrendsStats(userId: string | undefined) {
                 const topExerciseProgress: ExerciseProgress[] = topExercises
                     .map((exerciseId) => {
                         const logs = (exerciseLogs || []).filter(
-                            (log) => log.exercise_id === exerciseId
+                            (log) => log.exercise_id === exerciseId,
                         );
                         const exercise = logs[0]?.exercises as
                             | { name: string }
@@ -193,15 +202,15 @@ export function useTrendsStats(userId: string | undefined) {
 
                         logs.forEach((log) => {
                             const logSets = setLogs.filter(
-                                (set) => set.exercise_log_id === log.id
+                                (set) => set.exercise_log_id === log.id,
                             );
                             const maxWeight = Math.max(
-                                ...logSets.map((set) => set.weight || 0)
+                                ...logSets.map((set) => set.weight || 0),
                             );
 
                             if (maxWeight > 0) {
                                 const session = sessions.find(
-                                    (s) => s.id === log.workout_session_id
+                                    (s) => s.id === log.workout_session_id,
                                 );
                                 if (session) {
                                     dataPoints.push({
@@ -218,7 +227,7 @@ export function useTrendsStats(userId: string | undefined) {
                             dataPoints: dataPoints.sort(
                                 (a, b) =>
                                     new Date(a.date).getTime() -
-                                    new Date(b.date).getTime()
+                                    new Date(b.date).getTime(),
                             ),
                         };
                     })
@@ -239,7 +248,7 @@ export function useTrendsStats(userId: string | undefined) {
                     });
 
                 const workoutHeatmap: HeatmapDay[] = Array.from(
-                    heatmapMap.entries()
+                    heatmapMap.entries(),
                 ).map(([date, count]) => ({ date, count }));
 
                 // Best day and time
@@ -267,13 +276,13 @@ export function useTrendsStats(userId: string | undefined) {
 
                 const bestDayNum =
                     Array.from(dayCount.entries()).sort(
-                        (a, b) => b[1] - a[1]
+                        (a, b) => b[1] - a[1],
                     )[0]?.[0] ?? 0;
                 const bestDay = daysOfWeek[bestDayNum];
 
                 const bestHour =
                     Array.from(hourCount.entries()).sort(
-                        (a, b) => b[1] - a[1]
+                        (a, b) => b[1] - a[1],
                     )[0]?.[0] ?? 0;
                 const bestTime = `${bestHour.toString().padStart(2, "0")}:00`;
 
@@ -287,7 +296,7 @@ export function useTrendsStats(userId: string | undefined) {
             } catch (err) {
                 console.error("Error fetching trends stats:", err);
                 setError(
-                    err instanceof Error ? err : new Error("Unknown error")
+                    err instanceof Error ? err : new Error("Unknown error"),
                 );
             } finally {
                 setLoading(false);
