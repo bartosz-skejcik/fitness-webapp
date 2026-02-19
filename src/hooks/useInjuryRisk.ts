@@ -5,8 +5,13 @@ import type {
     TargetBodyPart,
     WorkoutSession,
     ExerciseLog,
-    SetLog,
 } from "@/types/database";
+
+interface InjuryRiskSetLog {
+    exercise_log_id: string;
+    reps: number;
+    weight?: number | null;
+}
 
 // Extended types for joined data
 interface SessionWithCompletion {
@@ -186,7 +191,7 @@ export function useInjuryRisk(weekCount: number = 12) {
     function detectVolumeSpikes(
         sessions: WorkoutSession[],
         exerciseLogs: ExerciseLog[],
-        setLogs: SetLog[],
+        setLogs: InjuryRiskSetLog[],
     ): InjuryRiskFactor[] {
         const factors: InjuryRiskFactor[] = [];
 
@@ -270,7 +275,7 @@ export function useInjuryRisk(weekCount: number = 12) {
 
     function detectImbalances(
         exerciseLogs: ExerciseLog[],
-        setLogs: SetLog[],
+        setLogs: InjuryRiskSetLog[],
     ): InjuryRiskFactor[] {
         const factors: InjuryRiskFactor[] = [];
 
@@ -347,7 +352,7 @@ export function useInjuryRisk(weekCount: number = 12) {
 
     function detectOvertraining(
         sessions: WorkoutSession[],
-        setLogs: SetLog[],
+        setLogs: InjuryRiskSetLog[],
     ): InjuryRiskFactor[] {
         const factors: InjuryRiskFactor[] = [];
 
@@ -442,7 +447,7 @@ export function useInjuryRisk(weekCount: number = 12) {
 
     function detectNeglectedStabilizers(
         exerciseLogs: ExerciseLog[],
-        setLogs: SetLog[],
+        setLogs: InjuryRiskSetLog[],
     ): InjuryRiskFactor[] {
         const factors: InjuryRiskFactor[] = [];
 
