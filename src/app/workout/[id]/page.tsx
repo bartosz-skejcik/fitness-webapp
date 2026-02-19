@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
-import { useRouter, useParams } from "next/navigation";
+import { useRouter, useParams, useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import {
     WorkoutSession,
@@ -10,6 +10,7 @@ import {
     SetLog,
     Exercise,
 } from "@/types/database";
+import { formatSeconds } from "@/lib/utils";
 import {
     ArrowLeft,
     Check,
@@ -19,6 +20,7 @@ import {
     Trophy,
     X,
     List,
+    Trash2,
 } from "lucide-react";
 import Link from "next/link";
 import Header from "../../../../components/header";
@@ -26,18 +28,20 @@ import Header from "../../../../components/header";
 interface ExerciseLogWithDetails extends ExerciseLog {
     exercise: Exercise;
     sets: SetLog[];
+    previousSets?: SetLog[];
 }
 
 export default function WorkoutSessionPage() {
     const { user } = useAuth();
     const router = useRouter();
     const params = useParams();
+    const searchParams = useSearchParams();
     const sessionId = params.id as string;
     const supabase = createClient();
 
     const [session, setSession] = useState<WorkoutSession | null>(null);
     const [exerciseLogs, setExerciseLogs] = useState<ExerciseLogWithDetails[]>(
-        []
+        [],
     );
     const [loading, setLoading] = useState(true);
     const [selectedExercise, setSelectedExercise] =
@@ -45,6 +49,15 @@ export default function WorkoutSessionPage() {
     const [currentExerciseIndex, setCurrentExerciseIndex] = useState(0);
     const [showExerciseList, setShowExerciseList] = useState(false);
     const [completing, setCompleting] = useState(false);
+    const [showCancelConfirm, setShowCancelConfirm] = useState(false);
+    const [cancelling, setCancelling] = useState(false);
+
+    // Helper function to update URL with current exercise index
+    const updateExerciseInUrl = (index: number) => {
+        const url = new URL(window.location.href);
+        url.searchParams.set("exercise", index.toString());
+        window.history.replaceState({}, "", url.toString());
+    };
 
     useEffect(() => {
         if (user && sessionId) {
@@ -53,12 +66,19 @@ export default function WorkoutSessionPage() {
     }, [user, sessionId]);
 
     async function fetchWorkoutSession() {
+        if (!user) {
+            setLoading(false);
+            return;
+        }
+
         setLoading(true);
         try {
             // Fetch session
             const { data: sessionData, error: sessionError } = await supabase
                 .from("workout_sessions")
-                .select("*")
+                .select(
+                    "id, user_id, workout_template_id, name, workout_type, started_at, completed_at, notes, created_at",
+                )
                 .eq("id", sessionId)
                 .single();
 
@@ -70,48 +90,184 @@ export default function WorkoutSessionPage() {
                 .from("exercise_logs")
                 .select(
                     `
-          *,
-          exercise:exercises(*)
-        `
+          id,
+          workout_session_id,
+          exercise_id,
+          order_index,
+          target_reps_min,
+          target_reps_max,
+          rest_seconds,
+          notes,
+          created_at,
+          exercise:exercises(
+            id,
+            user_id,
+            name,
+            description,
+            muscle_group,
+            target_body_part,
+            is_unilateral,
+            created_at,
+            updated_at
+          )
+        `,
                 )
                 .eq("workout_session_id", sessionId)
                 .order("order_index");
 
             if (logsError) throw logsError;
 
-            // Fetch sets for each exercise log
-            const logsWithSets = await Promise.all(
-                (logsData || []).map(async (log) => {
-                    const { data: sets, error: setsError } = await supabase
+            if (!logsData || logsData.length === 0) {
+                setExerciseLogs([]);
+                setSelectedExercise(null);
+                setCurrentExerciseIndex(0);
+                return;
+            }
+
+            const exerciseLogIds = logsData.map((log) => log.id);
+
+            const { data: allSets, error: setsError } = await supabase
+                .from("set_logs")
+                .select(
+                    "id, exercise_log_id, set_number, reps, weight, rir, completed, side, created_at",
+                )
+                .in("exercise_log_id", exerciseLogIds)
+                .order("set_number");
+
+            if (setsError) throw setsError;
+
+            const setsByLogId = new Map<string, SetLog[]>();
+            (allSets || []).forEach((set) => {
+                const list = setsByLogId.get(set.exercise_log_id) || [];
+                list.push(set as SetLog);
+                setsByLogId.set(set.exercise_log_id, list);
+            });
+
+            const uniqueExerciseIds = Array.from(
+                new Set(logsData.map((log) => log.exercise_id)),
+            );
+
+            const { data: previousLogs, error: prevError } = await supabase
+                .from("exercise_logs")
+                .select(
+                    `
+                        id,
+                        exercise_id,
+                        workout_session_id,
+                        workout_sessions!inner(user_id, completed_at)
+                    `,
+                )
+                .in("exercise_id", uniqueExerciseIds)
+                .neq("workout_session_id", sessionId)
+                .eq("workout_sessions.user_id", user.id)
+                .not("workout_sessions.completed_at", "is", null)
+                .order("workout_sessions(completed_at)", {
+                    ascending: false,
+                });
+
+            if (prevError) {
+                console.error("Error fetching previous workouts:", prevError);
+            }
+
+            const latestPreviousLogByExerciseId = new Map<string, string>();
+            (previousLogs || []).forEach((log) => {
+                if (!latestPreviousLogByExerciseId.has(log.exercise_id)) {
+                    latestPreviousLogByExerciseId.set(log.exercise_id, log.id);
+                }
+            });
+
+            const previousLogIds = Array.from(
+                latestPreviousLogByExerciseId.values(),
+            );
+
+            let previousSetsByLogId = new Map<string, SetLog[]>();
+
+            if (previousLogIds.length > 0) {
+                const { data: previousSets, error: prevSetsError } =
+                    await supabase
                         .from("set_logs")
-                        .select("*")
-                        .eq("exercise_log_id", log.id)
+                        .select(
+                            "id, exercise_log_id, set_number, reps, weight, rir, completed, side, created_at",
+                        )
+                        .in("exercise_log_id", previousLogIds)
                         .order("set_number");
 
-                    if (setsError) throw setsError;
+                if (prevSetsError) {
+                    console.error(
+                        "Error fetching previous sets:",
+                        prevSetsError,
+                    );
+                } else {
+                    previousSetsByLogId = new Map<string, SetLog[]>();
+                    (previousSets || []).forEach((set) => {
+                        const list =
+                            previousSetsByLogId.get(set.exercise_log_id) || [];
+                        list.push(set as SetLog);
+                        previousSetsByLogId.set(set.exercise_log_id, list);
+                    });
+                }
+            }
 
-                    return {
-                        ...log,
-                        sets: sets || [],
-                    };
-                })
+            const logsWithSets: ExerciseLogWithDetails[] = logsData.flatMap(
+                (log) => {
+                    const previousLogId = latestPreviousLogByExerciseId.get(
+                        log.exercise_id,
+                    );
+
+                    const normalizedExercise = Array.isArray(log.exercise)
+                        ? log.exercise[0]
+                        : log.exercise;
+
+                    if (!normalizedExercise) {
+                        return [];
+                    }
+
+                    return [
+                        {
+                            ...log,
+                            exercise: normalizedExercise as Exercise,
+                            sets: setsByLogId.get(log.id) || [],
+                            previousSets: previousLogId
+                                ? previousSetsByLogId.get(previousLogId) || []
+                                : [],
+                        },
+                    ];
+                },
             );
 
-            setExerciseLogs(logsWithSets as ExerciseLogWithDetails[]);
+            setExerciseLogs(logsWithSets);
 
-            // Auto-select first incomplete exercise
-            const firstIncomplete = logsWithSets.find((log) =>
-                log.sets.some((set: SetLog) => !set.completed)
-            );
-            if (firstIncomplete) {
-                const index = logsWithSets.findIndex(
-                    (l) => l.id === firstIncomplete.id
+            // Check if there's an exercise index in URL params
+            const exerciseParam = searchParams.get("exercise");
+            const urlExerciseIndex = exerciseParam
+                ? parseInt(exerciseParam, 10)
+                : null;
+
+            // Use URL param if valid, otherwise auto-select first incomplete exercise
+            if (
+                urlExerciseIndex !== null &&
+                urlExerciseIndex >= 0 &&
+                urlExerciseIndex < logsWithSets.length
+            ) {
+                setCurrentExerciseIndex(urlExerciseIndex);
+                setSelectedExercise(logsWithSets[urlExerciseIndex]);
+            } else {
+                // Auto-select first incomplete exercise
+                const firstIncomplete = logsWithSets.find((log) =>
+                    log.sets.some((set: SetLog) => !set.completed),
                 );
-                setCurrentExerciseIndex(index);
-                setSelectedExercise(firstIncomplete as ExerciseLogWithDetails);
-            } else if (logsWithSets.length > 0) {
-                setCurrentExerciseIndex(0);
-                setSelectedExercise(logsWithSets[0] as ExerciseLogWithDetails);
+                if (firstIncomplete) {
+                    const index = logsWithSets.findIndex(
+                        (l) => l.id === firstIncomplete.id,
+                    );
+                    setCurrentExerciseIndex(index);
+                    setSelectedExercise(firstIncomplete);
+                    updateExerciseInUrl(index);
+                } else if (logsWithSets.length > 0) {
+                    setCurrentExerciseIndex(0);
+                    setSelectedExercise(logsWithSets[0]);
+                    updateExerciseInUrl(0);
+                }
             }
         } catch (error) {
             console.error("Error fetching workout session:", error);
@@ -134,9 +290,9 @@ export default function WorkoutSessionPage() {
                 prevLogs.map((log) => ({
                     ...log,
                     sets: log.sets.map((set) =>
-                        set.id === setId ? { ...set, ...updates } : set
+                        set.id === setId ? { ...set, ...updates } : set,
                     ),
-                }))
+                })),
             );
 
             // Update selected exercise if needed
@@ -148,10 +304,10 @@ export default function WorkoutSessionPage() {
                               sets: prev.sets.map((set) =>
                                   set.id === setId
                                       ? { ...set, ...updates }
-                                      : set
+                                      : set,
                               ),
                           }
-                        : null
+                        : null,
                 );
             }
         } catch (error) {
@@ -181,11 +337,54 @@ export default function WorkoutSessionPage() {
         }
     }
 
+    async function cancelWorkout() {
+        if (!session) return;
+
+        setCancelling(true);
+        try {
+            // Delete all set logs first (cascade won't work from client)
+            const { error: setsError } = await supabase
+                .from("set_logs")
+                .delete()
+                .in(
+                    "exercise_log_id",
+                    exerciseLogs.map((log) => log.id),
+                );
+
+            if (setsError) throw setsError;
+
+            // Delete all exercise logs
+            const { error: logsError } = await supabase
+                .from("exercise_logs")
+                .delete()
+                .eq("workout_session_id", session.id);
+
+            if (logsError) throw logsError;
+
+            // Delete the workout session
+            const { error: sessionError } = await supabase
+                .from("workout_sessions")
+                .delete()
+                .eq("id", session.id);
+
+            if (sessionError) throw sessionError;
+
+            router.push("/dashboard");
+        } catch (error) {
+            console.error("Error cancelling workout:", error);
+            alert("Błąd podczas anulowania treningu");
+        } finally {
+            setCancelling(false);
+            setShowCancelConfirm(false);
+        }
+    }
+
     function goToNextExercise() {
         if (currentExerciseIndex < exerciseLogs.length - 1) {
             const nextIndex = currentExerciseIndex + 1;
             setCurrentExerciseIndex(nextIndex);
             setSelectedExercise(exerciseLogs[nextIndex]);
+            updateExerciseInUrl(nextIndex);
         }
     }
 
@@ -194,6 +393,7 @@ export default function WorkoutSessionPage() {
             const prevIndex = currentExerciseIndex - 1;
             setCurrentExerciseIndex(prevIndex);
             setSelectedExercise(exerciseLogs[prevIndex]);
+            updateExerciseInUrl(prevIndex);
         }
     }
 
@@ -201,6 +401,7 @@ export default function WorkoutSessionPage() {
         setCurrentExerciseIndex(index);
         setSelectedExercise(exerciseLogs[index]);
         setShowExerciseList(false);
+        updateExerciseInUrl(index);
     }
 
     if (loading) {
@@ -230,11 +431,11 @@ export default function WorkoutSessionPage() {
     }
 
     const allSetsCompleted = exerciseLogs.every((log) =>
-        log.sets.every((set) => set.completed)
+        log.sets.every((set) => set.completed),
     );
 
     const completedExercises = exerciseLogs.filter((log) =>
-        log.sets.every((set) => set.completed)
+        log.sets.every((set) => set.completed),
     ).length;
     const progressPercentage =
         exerciseLogs.length > 0
@@ -255,9 +456,17 @@ export default function WorkoutSessionPage() {
                 title={session.name.toUpperCase()}
                 buttons={[
                     <button
+                        key="cancel"
+                        onClick={() => setShowCancelConfirm(true)}
+                        className="flex items-center gap-2 bg-red-500/10 text-red-400 px-3 py-2 rounded-lg hover:bg-red-500/20 transition-all text-sm border border-red-500/20 font-medium"
+                    >
+                        <Trash2 className="w-4 h-4" />
+                        <span className="hidden sm:inline">Anuluj</span>
+                    </button>,
+                    <button
                         key="list"
                         onClick={() => setShowExerciseList(true)}
-                        className="flex items-center gap-2 bg-neutral-800 text-neutral-300 px-3 py-1.5 rounded-lg hover:bg-neutral-700 transition-colors text-xs"
+                        className="flex items-center gap-2 bg-neutral-800 text-neutral-300 px-3 py-2 rounded-lg hover:bg-neutral-700 transition-all text-sm border border-neutral-700 font-medium"
                     >
                         <List className="w-4 h-4" />
                         <span className="hidden sm:inline">Lista</span>
@@ -266,19 +475,19 @@ export default function WorkoutSessionPage() {
             />
 
             {/* Progress Bar */}
-            <div className="bg-neutral-900 border-b border-neutral-800 px-4 py-2">
+            <div className="bg-neutral-900 border-b border-neutral-800 px-4 py-4">
                 <div className="max-w-4xl mx-auto">
-                    <div className="flex items-center justify-between mb-1.5">
-                        <span className="text-xs text-neutral-400">
+                    <div className="flex items-center justify-between mb-2">
+                        <span className="text-xs font-bold text-neutral-400 uppercase tracking-wider">
                             Postęp treningu
                         </span>
-                        <span className="text-xs text-neutral-400">
-                            {completedExercises} / {exerciseLogs.length} ćwiczeń
+                        <span className="text-sm text-neutral-300 font-semibold">
+                            {completedExercises} / {exerciseLogs.length}
                         </span>
                     </div>
-                    <div className="h-2 bg-neutral-800 rounded-full overflow-hidden">
+                    <div className="h-2.5 bg-neutral-800 rounded-full overflow-hidden">
                         <div
-                            className="h-full bg-orange-500 transition-all duration-300"
+                            className="h-full bg-gradient-to-r from-orange-500 to-orange-400 transition-all duration-500 ease-out"
                             style={{ width: `${progressPercentage}%` }}
                         />
                     </div>
@@ -287,23 +496,23 @@ export default function WorkoutSessionPage() {
 
             {/* Exercise List Modal */}
             {showExerciseList && (
-                <div className="fixed inset-0 bg-neutral-950/95 z-50 flex items-center justify-center p-4">
-                    <div className="bg-neutral-900 rounded-lg max-w-2xl w-full max-h-[80vh] overflow-y-auto border border-neutral-800">
-                        <div className="sticky top-0 bg-neutral-900 border-b border-neutral-800 p-4 flex items-center justify-between">
-                            <h2 className="text-sm font-bold text-neutral-100">
-                                LISTA ĆWICZEŃ
+                <div className="fixed inset-0 bg-black/90 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
+                    <div className="bg-neutral-900 rounded-lg max-w-2xl w-full max-h-[85vh] overflow-hidden border border-neutral-800 shadow-2xl">
+                        <div className="sticky top-0 bg-neutral-900 border-b border-neutral-800 p-5 flex items-center justify-between">
+                            <h2 className="text-sm font-bold text-neutral-100 uppercase tracking-wider">
+                                Lista ćwiczeń
                             </h2>
                             <button
                                 onClick={() => setShowExerciseList(false)}
-                                className="text-neutral-400 hover:text-neutral-100"
+                                className="text-neutral-400 hover:text-neutral-100 transition-colors p-1 hover:bg-neutral-800 rounded"
                             >
                                 <X className="w-5 h-5" />
                             </button>
                         </div>
-                        <div>
+                        <div className="overflow-y-auto overflow-x-hidden max-h-[calc(85vh-5rem)]">
                             {exerciseLogs.map((log, idx) => {
                                 const completedSets = log.sets.filter(
-                                    (s) => s.completed
+                                    (s) => s.completed,
                                 ).length;
                                 const totalSets = log.sets.length;
                                 const isComplete = completedSets === totalSets;
@@ -315,35 +524,41 @@ export default function WorkoutSessionPage() {
                                         onClick={() =>
                                             selectExerciseFromList(idx)
                                         }
-                                        className={`w-full flex items-center justify-between p-4 border-b last:border-b-0 hover:bg-neutral-800 transition-colors ${
-                                            isCurrent ? "bg-neutral-800" : ""
+                                        className={`w-full flex items-center gap-4 p-5 border-b border-neutral-800 last:border-b-0 hover:bg-neutral-800/50 transition-all overflow-hidden border-l-4 ${
+                                            isCurrent
+                                                ? "bg-neutral-800/70 !border-l-orange-500"
+                                                : "!border-l-transparent"
                                         }`}
                                     >
-                                        <div className="flex items-center gap-3">
+                                        <div className="flex items-center gap-4 flex-1 min-w-0 overflow-hidden">
                                             <div
-                                                className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs ${
+                                                className={`w-10 h-10 flex-shrink-0 rounded-full flex items-center justify-center font-bold text-sm transition-all ${
                                                     isComplete
-                                                        ? "bg-orange-500 text-white"
-                                                        : "bg-neutral-800 text-neutral-400"
+                                                        ? "bg-gradient-to-br from-orange-500 to-orange-600 text-white"
+                                                        : isCurrent
+                                                          ? "bg-blue-500/20 text-blue-400 border-2 border-blue-500/50"
+                                                          : "bg-neutral-800 text-neutral-500 border-2 border-neutral-700"
                                                 }`}
                                             >
                                                 {isComplete ? (
-                                                    <Check className="w-4 h-4" />
+                                                    <Check className="w-5 h-5" />
                                                 ) : (
                                                     idx + 1
                                                 )}
                                             </div>
-                                            <div className="text-left">
-                                                <h3 className="font-semibold text-sm text-neutral-100">
+                                            <div className="text-left flex-1 min-w-0 overflow-hidden">
+                                                <h3 className="font-semibold text-base text-neutral-100 mb-0.5 truncate">
                                                     {log.exercise.name}
                                                 </h3>
-                                                <p className="text-xs text-neutral-500">
+                                                <p className="text-xs text-neutral-500 font-medium">
                                                     {completedSets}/{totalSets}{" "}
-                                                    serii
+                                                    {totalSets === 1
+                                                        ? "seria"
+                                                        : "serie"}
                                                 </p>
                                             </div>
                                         </div>
-                                        <ChevronRight className="w-4 h-4 text-neutral-600" />
+                                        <ChevronRight className="w-5 h-5 text-neutral-600 flex-shrink-0 ml-auto" />
                                     </button>
                                 );
                             })}
@@ -352,21 +567,103 @@ export default function WorkoutSessionPage() {
                 </div>
             )}
 
+            {/* Cancel Confirmation Modal */}
+            {showCancelConfirm && (
+                <div className="fixed inset-0 bg-black/90 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
+                    <div className="bg-neutral-900 rounded-lg max-w-md w-full border border-neutral-800 shadow-2xl">
+                        <div className="p-6">
+                            <div className="flex items-start gap-4 mb-4">
+                                <div className="w-12 h-12 rounded-full bg-red-500/10 flex items-center justify-center flex-shrink-0 border border-red-500/20">
+                                    <Trash2 className="w-6 h-6 text-red-400" />
+                                </div>
+                                <div>
+                                    <h2 className="text-lg font-bold text-neutral-100 mb-2">
+                                        Anulować trening?
+                                    </h2>
+                                    <p className="text-sm text-neutral-400 leading-relaxed">
+                                        Wszystkie wprowadzone dane zostaną
+                                        bezpowrotnie usunięte. Tej operacji nie
+                                        można cofnąć.
+                                    </p>
+                                </div>
+                            </div>
+                            <div className="flex gap-3 mt-6">
+                                <button
+                                    onClick={() => setShowCancelConfirm(false)}
+                                    disabled={cancelling}
+                                    className="flex-1 bg-neutral-800 text-neutral-300 py-3 rounded-lg hover:bg-neutral-700 transition-all disabled:opacity-50 font-semibold text-sm border border-neutral-700"
+                                >
+                                    Nie, kontynuuj
+                                </button>
+                                <button
+                                    onClick={cancelWorkout}
+                                    disabled={cancelling}
+                                    className="flex-1 bg-red-600 text-white py-3 rounded-lg hover:bg-red-700 transition-all disabled:opacity-50 font-semibold text-sm flex items-center justify-center gap-2 shadow-lg shadow-red-600/20"
+                                >
+                                    {cancelling ? (
+                                        <>
+                                            <Loader2 className="w-4 h-4 animate-spin" />
+                                            Usuwanie...
+                                        </>
+                                    ) : (
+                                        <>
+                                            <Trash2 className="w-4 h-4" />
+                                            Tak, anuluj
+                                        </>
+                                    )}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
             {/* Main Content */}
-            <main className="flex-1 max-w-4xl mx-auto w-full px-4 py-6">
+            <main className="flex-1 max-w-4xl mx-auto w-full px-4 py-6 pb-24">
                 {selectedExercise && (
-                    <div className="bg-neutral-900/50 border border-neutral-800 rounded-lg p-4">
-                        <div className="mb-4">
-                            <h2 className="text-lg font-bold text-neutral-100 mb-1">
+                    <div className="bg-neutral-900 border border-neutral-800 rounded-lg overflow-hidden">
+                        <div className="bg-gradient-to-r from-neutral-800 to-neutral-900 p-5 border-b border-neutral-800">
+                            <h2 className="text-xl font-bold text-neutral-100 mb-1">
                                 {selectedExercise.exercise.name}
                             </h2>
-                            <p className="text-xs text-neutral-500">
+                            <p className="text-xs text-neutral-500 font-medium uppercase tracking-wider">
                                 Ćwiczenie {currentExerciseIndex + 1} z{" "}
                                 {exerciseLogs.length}
                             </p>
                         </div>
 
-                        <div className="space-y-3">
+                        <div className="p-5 space-y-4">
+                            {(selectedExercise.target_reps_min ||
+                                selectedExercise.target_reps_max ||
+                                (selectedExercise.rest_seconds !== null &&
+                                    selectedExercise.rest_seconds !==
+                                        undefined)) && (
+                                <div className="flex flex-wrap items-center gap-3 text-xs text-neutral-400">
+                                    {(selectedExercise.target_reps_min ||
+                                        selectedExercise.target_reps_max) && (
+                                        <span className="px-2 py-1 rounded bg-blue-500/10 text-blue-300 border border-blue-500/20">
+                                            Cel:{" "}
+                                            {selectedExercise.target_reps_min ??
+                                                "?"}
+                                            –
+                                            {selectedExercise.target_reps_max ??
+                                                "?"}{" "}
+                                            powt.
+                                        </span>
+                                    )}
+                                    {selectedExercise.rest_seconds !== null &&
+                                        selectedExercise.rest_seconds !==
+                                            undefined && (
+                                            <span className="px-2 py-1 rounded bg-neutral-800 text-neutral-300 border border-neutral-700">
+                                                Odpoczynek:{" "}
+                                                {formatSeconds(
+                                                    selectedExercise.rest_seconds,
+                                                )}
+                                            </span>
+                                        )}
+                                </div>
+                            )}
+
                             {selectedExercise.sets.map((set, idx) => (
                                 <SetInput
                                     key={set.id}
@@ -374,6 +671,12 @@ export default function WorkoutSessionPage() {
                                     setNumber={idx + 1}
                                     onUpdate={(updates) =>
                                         updateSet(set.id, updates)
+                                    }
+                                    previousSet={
+                                        selectedExercise.previousSets?.[idx]
+                                    }
+                                    isUnilateral={
+                                        selectedExercise.exercise.is_unilateral
                                     }
                                 />
                             ))}
@@ -383,22 +686,22 @@ export default function WorkoutSessionPage() {
             </main>
 
             {/* Bottom Navigation */}
-            <div className="sticky bottom-0 bg-neutral-900 border-t border-neutral-800 px-4 py-3">
+            <div className="fixed bottom-0 left-0 right-0 bg-neutral-900 border-t border-neutral-800 px-4 py-4 shadow-2xl">
                 <div className="max-w-4xl mx-auto">
                     {allSetsCompleted ? (
                         <button
                             onClick={completeWorkout}
                             disabled={completing}
-                            className="w-full flex items-center justify-center gap-2 bg-orange-500 text-white py-3 rounded-lg hover:bg-orange-600 transition-colors disabled:opacity-50 font-semibold text-sm"
+                            className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-orange-500 to-orange-600 text-white py-4 rounded-lg hover:from-orange-600 hover:to-orange-700 transition-all disabled:opacity-50 font-bold text-base shadow-lg shadow-orange-500/30"
                         >
                             {completing ? (
                                 <>
-                                    <Loader2 className="w-5 h-5 animate-spin" />
+                                    <Loader2 className="w-6 h-6 animate-spin" />
                                     Zapisywanie...
                                 </>
                             ) : (
                                 <>
-                                    <Trophy className="w-5 h-5" />
+                                    <Trophy className="w-6 h-6 fill-current" />
                                     Zakończ trening
                                 </>
                             )}
@@ -408,7 +711,7 @@ export default function WorkoutSessionPage() {
                             <button
                                 onClick={goToPreviousExercise}
                                 disabled={currentExerciseIndex === 0}
-                                className="flex-1 flex items-center justify-center gap-2 bg-neutral-800 text-neutral-300 py-3 rounded-lg hover:bg-neutral-700 transition-colors disabled:opacity-30 disabled:cursor-not-allowed font-medium text-sm"
+                                className="flex-1 flex items-center justify-center gap-2 bg-neutral-800 text-neutral-300 py-3.5 rounded-lg hover:bg-neutral-700 transition-all disabled:opacity-30 disabled:cursor-not-allowed font-semibold text-sm border border-neutral-700"
                             >
                                 <ChevronLeft className="w-5 h-5" />
                                 Poprzednie
@@ -419,7 +722,7 @@ export default function WorkoutSessionPage() {
                                     currentExerciseIndex ===
                                     exerciseLogs.length - 1
                                 }
-                                className="flex-1 flex items-center justify-center gap-2 bg-orange-500 text-white py-3 rounded-lg hover:bg-orange-600 transition-colors disabled:opacity-30 disabled:cursor-not-allowed font-medium text-sm"
+                                className="flex-1 flex items-center justify-center gap-2 bg-orange-500 text-white py-3.5 rounded-lg hover:bg-orange-600 transition-all disabled:opacity-30 disabled:cursor-not-allowed font-semibold text-sm shadow-lg shadow-orange-500/20"
                             >
                                 Następne
                                 <ChevronRight className="w-5 h-5" />
@@ -436,20 +739,109 @@ interface SetInputProps {
     set: SetLog;
     setNumber: number;
     onUpdate: (updates: Partial<SetLog>) => void;
+    previousSet?: SetLog;
+    isUnilateral?: boolean;
 }
 
-function SetInput({ set, setNumber, onUpdate }: SetInputProps) {
-    const [reps, setReps] = useState<number | string>(set.reps || "");
-    const [weight, setWeight] = useState<number | string>(set.weight || "");
-    const [rir, setRir] = useState<number | string>(set.rir ?? "");
+function SetInput({
+    set,
+    setNumber,
+    onUpdate,
+    previousSet,
+    isUnilateral,
+}: SetInputProps) {
+    // Create a unique key for this set in localStorage
+    const storageKey = `workout_set_${set.id}`;
+
+    // Initialize state from localStorage if available, otherwise use set data
+    const getInitialValue = (key: string, defaultValue: number | string) => {
+        if (typeof window === "undefined") return defaultValue;
+        const stored = localStorage.getItem(`${storageKey}_${key}`);
+        return stored !== null ? stored : defaultValue;
+    };
+
+    const [reps, setReps] = useState<number | string>(() =>
+        getInitialValue("reps", set.reps || ""),
+    );
+    const [weight, setWeight] = useState<number | string>(() =>
+        getInitialValue("weight", set.weight || ""),
+    );
+    const [rir, setRir] = useState<number | string>(() => {
+        const defaultRir =
+            set.rir !== null && set.rir !== undefined && set.rir !== 0
+                ? set.rir
+                : "";
+        return getInitialValue("rir", defaultRir);
+    });
+    const [side, setSide] = useState<"left" | "right" | null>(() => {
+        if (typeof window === "undefined") return set.side || null;
+        const stored = localStorage.getItem(`${storageKey}_side`);
+        return stored ? (stored as "left" | "right") : set.side || null;
+    });
+
+    // Save to localStorage whenever values change
+    useEffect(() => {
+        if (typeof window === "undefined") return;
+        if (reps !== "")
+            localStorage.setItem(`${storageKey}_reps`, String(reps));
+        else localStorage.removeItem(`${storageKey}_reps`);
+    }, [reps, storageKey]);
+
+    useEffect(() => {
+        if (typeof window === "undefined") return;
+        if (weight !== "")
+            localStorage.setItem(`${storageKey}_weight`, String(weight));
+        else localStorage.removeItem(`${storageKey}_weight`);
+    }, [weight, storageKey]);
+
+    useEffect(() => {
+        if (typeof window === "undefined") return;
+        if (rir !== "") localStorage.setItem(`${storageKey}_rir`, String(rir));
+        else localStorage.removeItem(`${storageKey}_rir`);
+    }, [rir, storageKey]);
+
+    useEffect(() => {
+        if (typeof window === "undefined") return;
+        if (side) localStorage.setItem(`${storageKey}_side`, side);
+        else localStorage.removeItem(`${storageKey}_side`);
+    }, [side, storageKey]);
+
+    // Validate numeric input - allows digits, decimal point, and backspace
+    const handleNumericInput = (
+        value: string,
+        setter: (value: string) => void,
+        allowDecimal = false,
+    ) => {
+        // Allow empty string
+        if (value === "") {
+            setter("");
+            return;
+        }
+
+        // Regex: optional digits, optional single decimal point, optional digits after decimal
+        const regex = allowDecimal ? /^\d*\.?\d*$/ : /^\d*$/;
+
+        if (regex.test(value)) {
+            setter(value);
+        }
+    };
 
     const handleComplete = () => {
         onUpdate({
             reps: Number(reps) || 0,
             weight: Number(weight) || 0,
             rir: Number(rir) || 0,
+            side: isUnilateral ? side : null,
             completed: true,
         });
+
+        // Clear localStorage after successful save
+        if (typeof window !== "undefined") {
+            localStorage.removeItem(`${storageKey}_reps`);
+            localStorage.removeItem(`${storageKey}_weight`);
+            localStorage.removeItem(`${storageKey}_rir`);
+            localStorage.removeItem(`${storageKey}_side`);
+        }
     };
 
     const handleUncomplete = () => {
@@ -458,36 +850,52 @@ function SetInput({ set, setNumber, onUpdate }: SetInputProps) {
 
     if (set.completed) {
         return (
-            <div className="bg-orange-500/10 border-2 border-orange-500/20 rounded-lg p-4">
-                <div className="flex items-center justify-between mb-2">
-                    <span className="font-bold text-orange-400">
-                        Seria {setNumber}
-                    </span>
+            <div className="bg-gradient-to-br from-orange-500/10 to-orange-600/5 border-2 border-orange-500/30 rounded-lg p-4 shadow-lg shadow-orange-500/5">
+                <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center gap-2">
+                        <div className="w-6 h-6 rounded-full bg-orange-500/20 flex items-center justify-center">
+                            <Check className="w-4 h-4 text-orange-400" />
+                        </div>
+                        <span className="font-bold text-orange-400">
+                            Seria {setNumber}
+                        </span>
+                        {isUnilateral && set.side && (
+                            <span className="text-xs px-2 py-0.5 rounded bg-orange-500/20 text-orange-300 font-medium">
+                                {set.side === "left" ? "Lewa" : "Prawa"}
+                            </span>
+                        )}
+                    </div>
                     <button
                         onClick={handleUncomplete}
-                        className="text-orange-400 hover:text-green-700 text-sm font-medium"
+                        className="text-orange-400 hover:text-orange-300 text-sm font-semibold transition-colors"
                     >
                         Edytuj
                     </button>
                 </div>
-                <div className="grid grid-cols-3 gap-4 text-center">
-                    <div>
-                        <p className="text-sm font-bold text-orange-400">
+                <div className="grid grid-cols-3 gap-4">
+                    <div className="bg-neutral-900/50 rounded-lg p-3 text-center border border-orange-500/20">
+                        <p className="text-lg font-bold text-orange-400 mb-0.5">
                             {set.reps}
                         </p>
-                        <p className="text-xs text-orange-400">powtórzeń</p>
+                        <p className="text-xs text-orange-400/80 font-medium">
+                            powtórzeń
+                        </p>
                     </div>
-                    <div>
-                        <p className="text-sm font-bold text-orange-400">
+                    <div className="bg-neutral-900/50 rounded-lg p-3 text-center border border-orange-500/20">
+                        <p className="text-lg font-bold text-orange-400 mb-0.5">
                             {set.weight} kg
                         </p>
-                        <p className="text-xs text-orange-400">ciężar</p>
+                        <p className="text-xs text-orange-400/80 font-medium">
+                            ciężar
+                        </p>
                     </div>
-                    <div>
-                        <p className="text-sm font-bold text-orange-400">
+                    <div className="bg-neutral-900/50 rounded-lg p-3 text-center border border-orange-500/20">
+                        <p className="text-lg font-bold text-orange-400 mb-0.5">
                             {set.rir ?? "-"}
                         </p>
-                        <p className="text-xs text-orange-400">RIR</p>
+                        <p className="text-xs text-orange-400/80 font-medium">
+                            RIR
+                        </p>
                     </div>
                 </div>
             </div>
@@ -495,30 +903,113 @@ function SetInput({ set, setNumber, onUpdate }: SetInputProps) {
     }
 
     return (
-        <div className="bg-blue-500/10 border-2 border-blue-500/20 rounded-lg p-4">
+        <div className="bg-gradient-to-br from-blue-500/10 to-blue-600/5 border-2 border-blue-500/30 rounded-lg p-4 shadow-lg shadow-blue-500/5">
             <div className="mb-4">
-                <span className="font-bold text-blue-400 text-md">
-                    Seria {setNumber}
-                </span>
+                <div className="flex items-center gap-2 mb-3">
+                    <div className="w-6 h-6 rounded-full bg-blue-500/20 flex items-center justify-center border border-blue-500/30">
+                        <span className="text-xs font-bold text-blue-400">
+                            {setNumber}
+                        </span>
+                    </div>
+                    <span className="font-bold text-blue-400">
+                        Seria {setNumber}
+                    </span>
+                </div>
+                {previousSet && (
+                    <div className="bg-neutral-900/70 rounded-lg p-3 border border-neutral-800">
+                        <div className="flex items-center justify-between mb-2">
+                            <p className="text-xs font-bold text-neutral-400 uppercase tracking-wider">
+                                Ostatnio:
+                            </p>
+                            {isUnilateral && previousSet.side && (
+                                <span className="text-xs px-2 py-0.5 rounded bg-neutral-800 text-neutral-400 font-medium border border-neutral-700">
+                                    {previousSet.side === "left"
+                                        ? "Lewa"
+                                        : "Prawa"}
+                                </span>
+                            )}
+                        </div>
+                        <div className="grid grid-cols-3 gap-2">
+                            <div className="text-center">
+                                <p className="text-sm font-bold text-neutral-200">
+                                    {previousSet.reps}
+                                </p>
+                                <p className="text-[10px] text-neutral-500 uppercase tracking-wider">
+                                    Powtórzenia
+                                </p>
+                            </div>
+                            <div className="text-center">
+                                <p className="text-sm font-bold text-neutral-200">
+                                    {previousSet.weight} kg
+                                </p>
+                                <p className="text-[10px] text-neutral-500 uppercase tracking-wider">
+                                    Ciężar
+                                </p>
+                            </div>
+                            <div className="text-center">
+                                <p className="text-sm font-bold text-neutral-200">
+                                    {previousSet.rir ?? "-"}
+                                </p>
+                                <p className="text-[10px] text-neutral-500 uppercase tracking-wider">
+                                    RIR
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                )}
             </div>
+
+            {isUnilateral && (
+                <div className="mb-4">
+                    <label className="block text-xs font-bold text-neutral-300 mb-2 uppercase tracking-wider">
+                        Która strona?
+                    </label>
+                    <div className="grid grid-cols-2 gap-3">
+                        <button
+                            type="button"
+                            onClick={() => setSide("left")}
+                            className={`px-4 py-3 rounded-lg border-2 transition-all text-sm font-semibold ${
+                                side === "left"
+                                    ? "border-blue-500 bg-blue-500/20 text-blue-300 shadow-lg shadow-blue-500/20"
+                                    : "border-neutral-700 bg-neutral-800/50 text-neutral-400 hover:border-neutral-600 hover:bg-neutral-800"
+                            }`}
+                        >
+                            👈 Lewa
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => setSide("right")}
+                            className={`px-4 py-3 rounded-lg border-2 transition-all text-sm font-semibold ${
+                                side === "right"
+                                    ? "border-blue-500 bg-blue-500/20 text-blue-300 shadow-lg shadow-blue-500/20"
+                                    : "border-neutral-700 bg-neutral-800/50 text-neutral-400 hover:border-neutral-600 hover:bg-neutral-800"
+                            }`}
+                        >
+                            Prawa 👉
+                        </button>
+                    </div>
+                </div>
+            )}
 
             <div className="grid grid-cols-3 gap-3 mb-4">
                 <div>
-                    <label className="block text-xs font-medium text-neutral-300 mb-1">
+                    <label className="block text-xs font-bold text-neutral-300 mb-2 uppercase tracking-wider">
                         Powtórzenia
                     </label>
                     <input
                         type="text"
                         inputMode="numeric"
                         value={reps}
-                        onChange={(e) => setReps(Number(e.target.value) || 0)}
-                        className="w-full px-3 py-3 text-center text-sm font-bold border-2 border-neutral-700 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-neutral-200"
+                        onChange={(e) =>
+                            handleNumericInput(e.target.value, setReps, false)
+                        }
+                        className="w-full px-3 py-3.5 text-center text-base font-bold border-2 border-neutral-700 bg-neutral-800 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-neutral-100 transition-all placeholder:text-neutral-600"
                         placeholder="0"
                     />
                 </div>
 
                 <div>
-                    <label className="block text-xs font-medium text-neutral-300 mb-1">
+                    <label className="block text-xs font-bold text-neutral-300 mb-2 uppercase tracking-wider">
                         Ciężar (kg)
                     </label>
                     <input
@@ -526,22 +1017,26 @@ function SetInput({ set, setNumber, onUpdate }: SetInputProps) {
                         inputMode="decimal"
                         step="0.5"
                         value={weight}
-                        onChange={(e) => setWeight(Number(e.target.value) || 0)}
-                        className="w-full px-3 py-3 text-center text-sm font-bold border-2 border-neutral-700 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-neutral-200"
+                        onChange={(e) =>
+                            handleNumericInput(e.target.value, setWeight, true)
+                        }
+                        className="w-full px-3 py-3.5 text-center text-base font-bold border-2 border-neutral-700 bg-neutral-800 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-neutral-100 transition-all placeholder:text-neutral-600"
                         placeholder="0"
                     />
                 </div>
 
                 <div>
-                    <label className="block text-xs font-medium text-neutral-300 mb-1">
+                    <label className="block text-xs font-bold text-neutral-300 mb-2 uppercase tracking-wider">
                         RIR
                     </label>
                     <input
                         type="text"
-                        inputMode="numeric"
+                        inputMode="decimal"
                         value={rir}
-                        onChange={(e) => setRir(Number(e.target.value) || 0)}
-                        className="w-full px-3 py-3 text-center text-sm font-bold border-2 border-neutral-700 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-neutral-200"
+                        onChange={(e) =>
+                            handleNumericInput(e.target.value, setRir, true)
+                        }
+                        className="w-full px-3 py-3.5 text-center text-base font-bold border-2 border-neutral-700 bg-neutral-800 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-neutral-100 transition-all placeholder:text-neutral-600"
                         placeholder="0"
                         min="0"
                         max="10"
@@ -551,10 +1046,11 @@ function SetInput({ set, setNumber, onUpdate }: SetInputProps) {
 
             <button
                 onClick={handleComplete}
-                className="w-full bg-orange-500 text-white py-3 rounded-lg font-semibold hover:bg-orange-600 transition-colors flex items-center justify-center gap-2"
+                disabled={isUnilateral && !side}
+                className="w-full bg-gradient-to-r from-orange-500 to-orange-600 text-white py-3.5 rounded-lg font-bold hover:from-orange-600 hover:to-orange-700 transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-orange-500/20"
             >
                 <Check className="w-5 h-5" />
-                Potwierdź serię
+                {isUnilateral && !side ? "Wybierz stronę" : "Potwierdź serię"}
             </button>
         </div>
     );

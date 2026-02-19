@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { createClient } from "@/lib/supabase/client";
-import { WorkoutType } from "@/types/database";
+import { WorkoutType, TargetBodyPart } from "@/types/database";
 
 export interface ExerciseRecord {
     exerciseId: string;
@@ -9,6 +9,7 @@ export interface ExerciseRecord {
     maxReps: number;
     estimatedOneRM: number;
     lastPerformed: string;
+    targetBodyPart?: TargetBodyPart | null;
 }
 
 export interface VolumeData {
@@ -23,6 +24,7 @@ export interface MostPerformedExercise {
     exerciseName: string;
     count: number;
     muscleGroup?: WorkoutType;
+    targetBodyPart?: TargetBodyPart | null;
 }
 
 export interface MuscleGroupVolume {
@@ -31,11 +33,39 @@ export interface MuscleGroupVolume {
     percentage: number;
 }
 
+export interface BodyPartVolume {
+    bodyPart: TargetBodyPart;
+    volume: number;
+    percentage: number;
+    exerciseCount: number;
+    lastTrained: string | null;
+}
+
+export interface BodyPartPR {
+    bodyPart: TargetBodyPart;
+    exerciseId: string;
+    exerciseName: string;
+    maxWeight: number;
+    maxReps: number;
+    estimatedOneRM: number;
+    lastPerformed: string;
+}
+
+export interface BodyPartFrequency {
+    bodyPart: TargetBodyPart;
+    timesThisWeek: number;
+    timesThisMonth: number;
+    daysSinceLastTrained: number | null;
+}
+
 export interface StrengthStats {
     personalRecords: ExerciseRecord[];
     volumeData: VolumeData;
     mostPerformedExercises: MostPerformedExercise[];
     muscleGroupBalance: MuscleGroupVolume[];
+    bodyPartVolumes: BodyPartVolume[];
+    bodyPartPRs: BodyPartPR[];
+    bodyPartFrequency: BodyPartFrequency[];
 }
 
 export function useStrengthStats(userId: string | undefined) {
@@ -49,6 +79,9 @@ export function useStrengthStats(userId: string | undefined) {
         },
         mostPerformedExercises: [],
         muscleGroupBalance: [],
+        bodyPartVolumes: [],
+        bodyPartPRs: [],
+        bodyPartFrequency: [],
     });
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<Error | null>(null);
@@ -85,7 +118,9 @@ export function useStrengthStats(userId: string | undefined) {
                 // Fetch exercise logs with exercise details
                 const { data: exerciseLogs, error: logsError } = await supabase
                     .from("exercise_logs")
-                    .select("id, exercise_id, exercises(name, muscle_group)")
+                    .select(
+                        "id, exercise_id, exercises(name, muscle_group, target_body_part)"
+                    )
                     .in("workout_session_id", sessionIds);
 
                 if (logsError) throw logsError;
@@ -110,8 +145,10 @@ export function useStrengthStats(userId: string | undefined) {
                 const exerciseMap = new Map<
                     string,
                     {
+                        exerciseId: string;
                         name: string;
                         muscleGroup?: WorkoutType;
+                        targetBodyPart?: TargetBodyPart;
                         maxWeight: number;
                         maxReps: number;
                         estimatedOneRM: number;
@@ -147,6 +184,9 @@ export function useStrengthStats(userId: string | undefined) {
                     const muscleGroup = exercise.muscle_group as
                         | WorkoutType
                         | undefined;
+                    const targetBodyPart = exercise.target_body_part as
+                        | TargetBodyPart
+                        | undefined;
                     const weight = set.weight || 0;
                     const reps = set.reps;
                     const volume = weight * reps;
@@ -163,8 +203,10 @@ export function useStrengthStats(userId: string | undefined) {
                     // Track exercise stats
                     if (!exerciseMap.has(exerciseId)) {
                         exerciseMap.set(exerciseId, {
+                            exerciseId,
                             name: exerciseName,
                             muscleGroup,
+                            targetBodyPart,
                             maxWeight: weight,
                             maxReps: reps,
                             estimatedOneRM: 0,
@@ -246,6 +288,132 @@ export function useStrengthStats(userId: string | undefined) {
                     percentage: (volume / totalVolume) * 100,
                 }));
 
+                // Body part volume tracking
+                const bodyPartVolumeMap = new Map<
+                    TargetBodyPart,
+                    {
+                        volume: number;
+                        exerciseCount: number;
+                        lastTrained: string | null;
+                    }
+                >();
+
+                Array.from(exerciseMap.values()).forEach((data) => {
+                    if (data.targetBodyPart) {
+                        const existing = bodyPartVolumeMap.get(
+                            data.targetBodyPart
+                        ) || { volume: 0, exerciseCount: 0, lastTrained: null };
+                        bodyPartVolumeMap.set(data.targetBodyPart, {
+                            volume: existing.volume + data.totalVolume,
+                            exerciseCount: existing.exerciseCount + 1,
+                            lastTrained:
+                                !existing.lastTrained ||
+                                data.lastPerformed > existing.lastTrained
+                                    ? data.lastPerformed
+                                    : existing.lastTrained,
+                        });
+                    }
+                });
+
+                const bodyPartVolumes: BodyPartVolume[] = Array.from(
+                    bodyPartVolumeMap.entries()
+                )
+                    .map(([bodyPart, data]) => ({
+                        bodyPart,
+                        volume: data.volume,
+                        percentage: (data.volume / totalVolume) * 100,
+                        exerciseCount: data.exerciseCount,
+                        lastTrained: data.lastTrained,
+                    }))
+                    .sort((a, b) => b.volume - a.volume);
+
+                // Body part PRs tracking
+                const bodyPartPRMap = new Map<TargetBodyPart, BodyPartPR>();
+
+                Array.from(exerciseMap.values()).forEach((data) => {
+                    if (data.targetBodyPart && data.estimatedOneRM) {
+                        const existing = bodyPartPRMap.get(data.targetBodyPart);
+                        if (
+                            !existing ||
+                            data.estimatedOneRM > existing.estimatedOneRM
+                        ) {
+                            bodyPartPRMap.set(data.targetBodyPart, {
+                                bodyPart: data.targetBodyPart,
+                                exerciseId: data.exerciseId,
+                                exerciseName: data.name,
+                                maxWeight: data.maxWeight,
+                                maxReps: data.maxReps,
+                                estimatedOneRM: data.estimatedOneRM,
+                                lastPerformed: data.lastPerformed,
+                            });
+                        }
+                    }
+                });
+
+                const bodyPartPRs: BodyPartPR[] = Array.from(
+                    bodyPartPRMap.values()
+                );
+
+                // Body part frequency tracking
+                const oneWeekAgo = new Date();
+                oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
+                const oneMonthAgo = new Date();
+                oneMonthAgo.setDate(oneMonthAgo.getDate() - 30);
+
+                const bodyPartFrequencyMap = new Map<
+                    TargetBodyPart,
+                    {
+                        timesThisWeek: number;
+                        timesThisMonth: number;
+                        daysSinceLastTrained: number | null;
+                    }
+                >();
+
+                Array.from(exerciseMap.values()).forEach((data) => {
+                    if (data.targetBodyPart) {
+                        const existing = bodyPartFrequencyMap.get(
+                            data.targetBodyPart
+                        ) || {
+                            timesThisWeek: 0,
+                            timesThisMonth: 0,
+                            daysSinceLastTrained: null,
+                        };
+
+                        const lastTrainedDate = new Date(data.lastPerformed);
+                        const daysSince = Math.floor(
+                            (now.getTime() - lastTrainedDate.getTime()) /
+                                (1000 * 60 * 60 * 24)
+                        );
+
+                        bodyPartFrequencyMap.set(data.targetBodyPart, {
+                            timesThisWeek:
+                                existing.timesThisWeek +
+                                (lastTrainedDate >= oneWeekAgo
+                                    ? data.count
+                                    : 0),
+                            timesThisMonth:
+                                existing.timesThisMonth +
+                                (lastTrainedDate >= oneMonthAgo
+                                    ? data.count
+                                    : 0),
+                            daysSinceLastTrained:
+                                existing.daysSinceLastTrained === null ||
+                                daysSince < existing.daysSinceLastTrained
+                                    ? daysSince
+                                    : existing.daysSinceLastTrained,
+                        });
+                    }
+                });
+
+                const bodyPartFrequency: BodyPartFrequency[] = Array.from(
+                    bodyPartFrequencyMap.entries()
+                ).map(([bodyPart, data]) => ({
+                    bodyPart,
+                    timesThisWeek: data.timesThisWeek,
+                    timesThisMonth: data.timesThisMonth,
+                    daysSinceLastTrained: data.daysSinceLastTrained,
+                }));
+
                 setStats({
                     personalRecords,
                     volumeData: {
@@ -264,6 +432,9 @@ export function useStrengthStats(userId: string | undefined) {
                     },
                     mostPerformedExercises: mostPerformed,
                     muscleGroupBalance,
+                    bodyPartVolumes,
+                    bodyPartPRs,
+                    bodyPartFrequency,
                 });
             } catch (err) {
                 console.error("Error fetching strength stats:", err);

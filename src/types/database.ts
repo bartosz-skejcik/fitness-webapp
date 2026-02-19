@@ -22,9 +22,19 @@ export interface Exercise {
     name: string;
     description?: string;
     muscle_group?: WorkoutType;
-    target_body_part?: TargetBodyPart | null;
+    target_body_part?: TargetBodyPart | null; // Deprecated: use body_parts array instead
+    is_unilateral?: boolean;
     created_at: string;
     updated_at: string;
+    body_parts?: ExerciseBodyPart[]; // New: multiple body parts support
+}
+
+export interface ExerciseBodyPart {
+    id: string;
+    exercise_id: string;
+    body_part: TargetBodyPart;
+    is_primary: boolean;
+    created_at: string;
 }
 
 export interface WorkoutTemplate {
@@ -43,6 +53,9 @@ export interface WorkoutTemplateExercise {
     exercise_id: string;
     order_index: number;
     sets_count: number;
+    target_reps_min?: number | null;
+    target_reps_max?: number | null;
+    rest_seconds?: number | null;
     created_at: string;
     exercise?: Exercise;
 }
@@ -64,6 +77,9 @@ export interface ExerciseLog {
     workout_session_id: string;
     exercise_id: string;
     order_index: number;
+    target_reps_min?: number | null;
+    target_reps_max?: number | null;
+    rest_seconds?: number | null;
     notes?: string;
     created_at: string;
     exercise?: Exercise;
@@ -77,6 +93,7 @@ export interface SetLog {
     weight?: number;
     rir?: number;
     completed: boolean;
+    side?: "left" | "right" | null;
     created_at: string;
 }
 
@@ -118,4 +135,20 @@ export interface SharedTemplateWithDetails {
     shared_by_name?: string;
     shared_by_email?: string;
     exercise_count: number;
+}
+
+export type GoalType = "volume" | "frequency" | "specific_exercises";
+export type GoalTimeframe = "weekly" | "monthly";
+
+export interface BodyPartGoal {
+    id: string;
+    user_id: string;
+    body_part: TargetBodyPart;
+    goal_type: GoalType;
+    target_value?: number;
+    target_exercises?: string[];
+    timeframe: GoalTimeframe;
+    created_at: string;
+    updated_at: string;
+    is_active: boolean;
 }

@@ -15,6 +15,7 @@ import {
     ClipboardList,
     Play,
     TrendingUp,
+    Dumbbell,
 } from "lucide-react";
 import Link from "next/link";
 import Header from "../../../components/header";
@@ -124,27 +125,48 @@ export default function TemplatesPage() {
             />
 
             <main className="max-w-7xl mx-auto px-4 py-6 pb-24">
-                {/* Link to shared templates */}
-                <Link
-                    href="/templates/shared"
-                    className="block mb-6 p-4 bg-gradient-to-r from-blue-500/10 to-orange-500/10 border border-blue-500/20 rounded-lg hover:border-blue-500/40 transition-colors"
-                >
-                    <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-full bg-blue-500/20 flex items-center justify-center">
-                            <Users className="w-5 h-5 text-blue-400" />
+                {/* Quick Links */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                    <Link
+                        href="/templates/shared"
+                        className="block p-4 bg-gradient-to-r from-blue-500/10 to-purple-500/10 border border-blue-500/20 rounded-lg hover:border-blue-500/40 transition-colors"
+                    >
+                        <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-full bg-blue-500/20 flex items-center justify-center">
+                                <Users className="w-5 h-5 text-blue-400" />
+                            </div>
+                            <div className="flex-1">
+                                <h3 className="text-sm font-semibold text-neutral-100 mb-1">
+                                    Treningi od znajomych
+                                </h3>
+                                <p className="text-xs text-neutral-400">
+                                    Przeglądaj i kopiuj treningi
+                                </p>
+                            </div>
+                            <ArrowLeft className="w-5 h-5 text-neutral-400 rotate-180" />
                         </div>
-                        <div className="flex-1">
-                            <h3 className="text-sm font-semibold text-neutral-100 mb-1">
-                                Treningi od znajomych
-                            </h3>
-                            <p className="text-xs text-neutral-400">
-                                Przeglądaj i kopiuj treningi udostępnione przez
-                                znajomych
-                            </p>
+                    </Link>
+
+                    <Link
+                        href="/exercises"
+                        className="block p-4 bg-gradient-to-r from-orange-500/10 to-red-500/10 border border-orange-500/20 rounded-lg hover:border-orange-500/40 transition-colors"
+                    >
+                        <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-full bg-orange-500/20 flex items-center justify-center">
+                                <Dumbbell className="w-5 h-5 text-orange-400" />
+                            </div>
+                            <div className="flex-1">
+                                <h3 className="text-sm font-semibold text-neutral-100 mb-1">
+                                    Zarządzaj ćwiczeniami
+                                </h3>
+                                <p className="text-xs text-neutral-400">
+                                    Edytuj, usuń lub oznacz jako jednostronne
+                                </p>
+                            </div>
+                            <ArrowLeft className="w-5 h-5 text-neutral-400 rotate-180" />
                         </div>
-                        <ArrowLeft className="w-5 h-5 text-neutral-400 rotate-180" />
-                    </div>
-                </Link>
+                    </Link>
+                </div>
 
                 {templates.length === 0 ? (
                     <div className="bg-neutral-900/50 rounded-lg p-12 text-center">

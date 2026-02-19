@@ -17,10 +17,14 @@ import {
     Target,
     Flame,
     Users,
+    AlertTriangle,
+    Award,
+    Activity,
 } from "lucide-react";
 import Link from "next/link";
 import Header from "../../../components/header";
 import UserMenu from "../../../components/user-menu";
+import { useDashboardInsights } from "@/hooks/useDashboardInsights";
 
 export default function DashboardPage() {
     const { user, loading: authLoading } = useAuth();
@@ -34,6 +38,7 @@ export default function DashboardPage() {
         totalVolume: 0,
         currentStreak: 0,
     });
+    const { insights } = useDashboardInsights();
     const supabase = createClient();
 
     useEffect(() => {
@@ -50,104 +55,50 @@ export default function DashboardPage() {
 
     async function fetchData() {
         try {
-            // Fetch workout templates
-            const { data: templatesData, error: templatesError } =
-                await supabase
-                    .from("workout_templates")
-                    .select("*")
-                    .eq("user_id", user?.id)
-                    .order("created_at", { ascending: false });
+            const userId = user?.id;
+            if (!userId) return;
 
-            if (templatesError) throw templatesError;
-            setTemplates(templatesData || []);
+            const [templatesRes, sessionsRes, dashboardStatsRes] =
+                await Promise.all([
+                    supabase
+                        .from("workout_templates")
+                        .select(
+                            "id, user_id, name, workout_type, description, created_at, updated_at",
+                        )
+                        .eq("user_id", userId)
+                        .order("created_at", { ascending: false }),
+                    supabase
+                        .from("workout_sessions")
+                        .select(
+                            "id, user_id, workout_template_id, name, workout_type, started_at, completed_at, notes, created_at",
+                        )
+                        .eq("user_id", userId)
+                        .order("started_at", { ascending: false }),
+                    supabase.rpc("get_dashboard_stats", {
+                        p_user_id: userId,
+                    }),
+                ]);
 
-            // Fetch all workout sessions
-            const { data: allSessions, error: allSessionsError } =
-                await supabase
-                    .from("workout_sessions")
-                    .select("*")
-                    .eq("user_id", user?.id)
-                    .order("started_at", { ascending: false });
+            if (templatesRes.error) throw templatesRes.error;
+            setTemplates((templatesRes.data || []) as WorkoutTemplate[]);
 
-            if (allSessionsError) throw allSessionsError;
+            const allSessions = sessionsRes.data || [];
+
+            if (sessionsRes.error) throw sessionsRes.error;
 
             // Fetch recent workout sessions for display
             const recentSessionsData = (allSessions || []).slice(0, 5);
-            setRecentSessions(recentSessionsData);
+            setRecentSessions(recentSessionsData as WorkoutSession[]);
 
-            // Calculate stats
-            const now = new Date();
-            const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+            if (dashboardStatsRes.error) throw dashboardStatsRes.error;
 
-            const weeklyWorkouts = (allSessions || []).filter(
-                (s) => new Date(s.started_at) >= weekAgo
-            ).length;
-
-            // Calculate current streak
-            let streak = 0;
-            const sortedSessions = (allSessions || []).sort(
-                (a, b) =>
-                    new Date(b.started_at).getTime() -
-                    new Date(a.started_at).getTime()
-            );
-
-            const today = new Date();
-            today.setHours(0, 0, 0, 0);
-
-            for (let i = 0; i < sortedSessions.length; i++) {
-                const sessionDate = new Date(sortedSessions[i].started_at);
-                sessionDate.setHours(0, 0, 0, 0);
-
-                const daysDiff = Math.floor(
-                    (today.getTime() - sessionDate.getTime()) /
-                        (1000 * 60 * 60 * 24)
-                );
-
-                if (daysDiff === streak || (streak === 0 && daysDiff <= 1)) {
-                    streak++;
-                } else {
-                    break;
-                }
-            }
-
-            // Fetch exercise logs and sets for volume calculation
-            const sessionIds = (allSessions || []).map((s) => s.id);
-
-            if (sessionIds.length > 0) {
-                const { data: exerciseLogs } = await supabase
-                    .from("exercise_logs")
-                    .select("id")
-                    .in("workout_session_id", sessionIds);
-
-                const exerciseLogIds = (exerciseLogs || []).map((l) => l.id);
-
-                if (exerciseLogIds.length > 0) {
-                    const { data: sets } = await supabase
-                        .from("set_logs")
-                        .select("reps, weight")
-                        .in("exercise_log_id", exerciseLogIds)
-                        .eq("completed", true);
-
-                    const totalVolume = (sets || []).reduce(
-                        (sum, set) => sum + set.reps * (set.weight || 0),
-                        0
-                    );
-
-                    setStats({
-                        totalWorkouts: (allSessions || []).length,
-                        weeklyWorkouts,
-                        totalVolume: Math.round(totalVolume),
-                        currentStreak: streak,
-                    });
-                } else {
-                    setStats({
-                        totalWorkouts: (allSessions || []).length,
-                        weeklyWorkouts,
-                        totalVolume: 0,
-                        currentStreak: streak,
-                    });
-                }
-            }
+            const dbStats = dashboardStatsRes.data?.[0];
+            setStats({
+                totalWorkouts: Number(dbStats?.total_workouts ?? 0),
+                weeklyWorkouts: Number(dbStats?.weekly_workouts ?? 0),
+                totalVolume: Math.round(Number(dbStats?.total_volume ?? 0)),
+                currentStreak: Number(dbStats?.current_streak ?? 0),
+            });
         } catch (error) {
             console.error("Error fetching data:", error);
         } finally {
@@ -187,9 +138,107 @@ export default function DashboardPage() {
             />
 
             <main className="max-w-7xl mx-auto px-4 py-6 pb-24">
+                {/* Body Part Insights */}
+                {insights.length > 0 && (
+                    <div className="mb-6">
+                        <h2 className="text-xs font-bold text-neutral-400 uppercase tracking-wider mb-3">
+                            Analiza partii mięśniowych
+                        </h2>
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
+                            {insights.map((insight, idx) => {
+                                const getInsightColor = () => {
+                                    if (insight.severity === "positive") {
+                                        return "from-green-500/20 to-green-600/10 border-green-500/30";
+                                    }
+                                    switch (insight.severity) {
+                                        case "high":
+                                            return "from-red-500/20 to-red-600/10 border-red-500/30";
+                                        case "moderate":
+                                            return "from-yellow-500/20 to-yellow-600/10 border-yellow-500/30";
+                                        default:
+                                            return "from-blue-500/20 to-blue-600/10 border-blue-500/30";
+                                    }
+                                };
+
+                                const getInsightIcon = () => {
+                                    switch (insight.type) {
+                                        case "imbalance":
+                                            return (
+                                                <AlertTriangle className="w-5 h-5" />
+                                            );
+                                        case "undertrained":
+                                            return (
+                                                <Activity className="w-5 h-5" />
+                                            );
+                                        case "pr":
+                                            return (
+                                                <Award className="w-5 h-5" />
+                                            );
+                                        case "performing":
+                                            return (
+                                                <TrendingUp className="w-5 h-5" />
+                                            );
+                                    }
+                                };
+
+                                const getInsightTextColor = () => {
+                                    if (insight.severity === "positive") {
+                                        return "text-green-400";
+                                    }
+                                    switch (insight.severity) {
+                                        case "high":
+                                            return "text-red-400";
+                                        case "moderate":
+                                            return "text-yellow-400";
+                                        default:
+                                            return "text-blue-400";
+                                    }
+                                };
+
+                                return (
+                                    <Link
+                                        key={idx}
+                                        href="/progress?tab=bodyparts"
+                                        className={`bg-gradient-to-br ${getInsightColor()} border-2 rounded-lg p-4 hover:scale-[1.02] transition-transform`}
+                                    >
+                                        <div className="flex items-start justify-between mb-2">
+                                            <div
+                                                className={`p-2 bg-black/20 rounded-lg ${getInsightTextColor()}`}
+                                            >
+                                                {getInsightIcon()}
+                                            </div>
+                                            <span
+                                                className={`text-xl font-bold ${getInsightTextColor()}`}
+                                            >
+                                                {insight.value}
+                                            </span>
+                                        </div>
+                                        <h3
+                                            className={`font-bold text-sm mb-1 ${getInsightTextColor()}`}
+                                        >
+                                            {insight.title}
+                                        </h3>
+                                        <p
+                                            className={`text-xs opacity-90 ${getInsightTextColor()}`}
+                                        >
+                                            {insight.description}
+                                        </p>
+                                    </Link>
+                                );
+                            })}
+                        </div>
+                    </div>
+                )}
+
                 {/* Stats Tiles */}
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
-                    <div className="bg-neutral-900 border border-neutral-800 rounded-lg p-4">
+                    <div
+                        className="bg-gradient-to-br from-neutral-800/60 via-neutral-900/40 to-neutral-950/20 border border-neutral-800 rounded-lg p-4 shadow-sm"
+                        style={{
+                            boxShadow:
+                                "inset 0 1px 0 rgba(255,255,255,0.03), 0 6px 18px rgba(0,0,0,0.45)",
+                        }}
+                    >
                         <div className="flex items-center gap-2 mb-2">
                             <Calendar className="w-4 h-4 text-blue-400" />
                             <span className="text-xs text-neutral-400">
@@ -204,7 +253,13 @@ export default function DashboardPage() {
                         </p>
                     </div>
 
-                    <div className="bg-neutral-900 border border-neutral-800 rounded-lg p-4">
+                    <div
+                        className="bg-gradient-to-br from-neutral-800/60 via-neutral-900/40 to-neutral-950/20 border border-neutral-800 rounded-lg p-4 shadow-sm"
+                        style={{
+                            boxShadow:
+                                "inset 0 1px 0 rgba(255,255,255,0.03), 0 6px 18px rgba(0,0,0,0.45)",
+                        }}
+                    >
                         <div className="flex items-center gap-2 mb-2">
                             <Target className="w-4 h-4 text-orange-500" />
                             <span className="text-xs text-neutral-400">
@@ -219,7 +274,13 @@ export default function DashboardPage() {
                         </p>
                     </div>
 
-                    <div className="bg-neutral-900 border border-neutral-800 rounded-lg p-4">
+                    <div
+                        className="bg-gradient-to-br from-neutral-800/60 via-neutral-900/40 to-neutral-950/20 border border-neutral-800 rounded-lg p-4 shadow-sm"
+                        style={{
+                            boxShadow:
+                                "inset 0 1px 0 rgba(255,255,255,0.03), 0 6px 18px rgba(0,0,0,0.45)",
+                        }}
+                    >
                         <div className="flex items-center gap-2 mb-2">
                             <Dumbbell className="w-4 h-4 text-blue-400" />
                             <span className="text-xs text-neutral-400">
@@ -236,7 +297,13 @@ export default function DashboardPage() {
                         </p>
                     </div>
 
-                    <div className="bg-neutral-900 border border-neutral-800 rounded-lg p-4">
+                    <div
+                        className="bg-gradient-to-br from-neutral-800/60 via-neutral-900/40 to-neutral-950/20 border border-neutral-800 rounded-lg p-4 shadow-sm"
+                        style={{
+                            boxShadow:
+                                "inset 0 1px 0 rgba(255,255,255,0.03), 0 6px 18px rgba(0,0,0,0.45)",
+                        }}
+                    >
                         <div className="flex items-center gap-2 mb-2">
                             <Flame className="w-4 h-4 text-orange-500" />
                             <span className="text-xs text-neutral-400">
@@ -286,7 +353,7 @@ export default function DashboardPage() {
                                         </h3>
                                         <p className="text-xs text-neutral-500">
                                             {new Date(
-                                                session.started_at
+                                                session.started_at,
                                             ).toLocaleDateString("pl-PL", {
                                                 day: "numeric",
                                                 month: "long",
