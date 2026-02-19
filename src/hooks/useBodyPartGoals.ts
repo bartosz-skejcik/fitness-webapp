@@ -11,6 +11,13 @@ interface GoalProgress {
     isAchieved: boolean;
 }
 
+interface GoalProgressRow {
+    goal_id: string;
+    current_value: number | null;
+    target_value: number | null;
+    progress_percentage: number | null;
+}
+
 export function useBodyPartGoals() {
     const [goals, setGoals] = useState<BodyPartGoal[]>([]);
     const [goalsWithProgress, setGoalsWithProgress] = useState<GoalProgress[]>(
@@ -53,201 +60,135 @@ export function useBodyPartGoals() {
                 return;
             }
 
-            const now = new Date();
-            const monthlyStart = new Date(now);
-            monthlyStart.setDate(now.getDate() - 30);
+            const { data: rpcProgressData, error: rpcProgressError } =
+                await supabase.rpc("calculate_all_goal_progress", {
+                    p_user_id: user.id,
+                });
 
-            const { data: sessions } = await supabase
-                .from("workout_sessions")
-                .select("id, started_at")
-                .eq("user_id", user.id)
-                .gte("started_at", monthlyStart.toISOString())
-                .not("completed_at", "is", null);
-
-            const validSessions = sessions || [];
-
-            if (validSessions.length === 0) {
-                setGoalsWithProgress(
-                    typedGoals.map((goal) => ({
-                        goal,
-                        currentValue: 0,
-                        progress: 0,
-                        isAchieved: false,
-                    })),
+            const progressByGoalId = new Map<string, GoalProgressRow>();
+            if (!rpcProgressError) {
+                (rpcProgressData as GoalProgressRow[] | null)?.forEach(
+                    (row) => {
+                        progressByGoalId.set(row.goal_id, row);
+                    },
                 );
-                return;
             }
 
-            const sessionIds = validSessions.map((s) => s.id);
-
-            const { data: exercises } = await supabase
-                .from("exercises")
-                .select("id, name, target_body_part")
-                .eq("user_id", user.id);
-
-            const exercisesData = exercises || [];
-            const exerciseById = new Map(
-                exercisesData.map((exercise) => [exercise.id, exercise]),
+            const specificExerciseGoals = typedGoals.filter(
+                (goal) => goal.goal_type === "specific_exercises",
             );
-            const exerciseIdsByName = new Map<string, string[]>();
 
-            exercisesData.forEach((exercise) => {
-                const ids = exerciseIdsByName.get(exercise.name) || [];
-                ids.push(exercise.id);
-                exerciseIdsByName.set(exercise.name, ids);
-            });
+            const specificExerciseCounts = new Map<string, number>();
 
-            const { data: exerciseLogs } = await supabase
-                .from("exercise_logs")
-                .select("id, workout_session_id, exercise_id")
-                .in("workout_session_id", sessionIds);
+            if (specificExerciseGoals.length > 0) {
+                const now = new Date();
+                const monthlyStart = new Date(now);
+                monthlyStart.setDate(now.getDate() - 30);
 
-            const logsData = exerciseLogs || [];
-            const logIds = logsData.map((log) => log.id);
+                const { data: sessions } = await supabase
+                    .from("workout_sessions")
+                    .select("id, started_at")
+                    .eq("user_id", user.id)
+                    .gte("started_at", monthlyStart.toISOString())
+                    .not("completed_at", "is", null);
 
-            const setLogs =
-                logIds.length > 0
-                    ? (
-                          await supabase
-                              .from("set_logs")
-                              .select("exercise_log_id, weight, reps")
-                              .in("exercise_log_id", logIds)
-                              .eq("completed", true)
-                      ).data
-                    : [];
+                const validSessions = sessions || [];
+                const sessionIds = validSessions.map((s) => s.id);
 
-            const setsByLogId = new Map<
-                string,
-                Array<{
-                    exercise_log_id: string;
-                    weight: number | null;
-                    reps: number;
-                }>
-            >();
+                if (sessionIds.length > 0) {
+                    const { data: exercises } = await supabase
+                        .from("exercises")
+                        .select("id, name")
+                        .eq("user_id", user.id);
 
-            (setLogs || []).forEach((set) => {
-                const existing = setsByLogId.get(set.exercise_log_id) || [];
-                existing.push(set);
-                setsByLogId.set(set.exercise_log_id, existing);
-            });
+                    const exerciseIdsByName = new Map<string, string[]>();
+                    (exercises || []).forEach((exercise) => {
+                        const ids = exerciseIdsByName.get(exercise.name) || [];
+                        ids.push(exercise.id);
+                        exerciseIdsByName.set(exercise.name, ids);
+                    });
 
-            const sessionDateById = new Map(
-                validSessions.map((session) => [
-                    session.id,
-                    session.started_at,
-                ]),
-            );
+                    const { data: exerciseLogs } = await supabase
+                        .from("exercise_logs")
+                        .select("workout_session_id, exercise_id")
+                        .in("workout_session_id", sessionIds);
+
+                    const logsData = exerciseLogs || [];
+                    const sessionDateById = new Map(
+                        validSessions.map((session) => [
+                            session.id,
+                            session.started_at,
+                        ]),
+                    );
+
+                    specificExerciseGoals.forEach((goal) => {
+                        const startDate = new Date(now);
+                        startDate.setDate(
+                            now.getDate() -
+                                (goal.timeframe === "weekly" ? 7 : 30),
+                        );
+
+                        const targetExercises = goal.target_exercises || [];
+                        const targetExerciseIds = new Set<string>();
+                        targetExercises.forEach((exerciseName) => {
+                            const ids =
+                                exerciseIdsByName.get(exerciseName) || [];
+                            ids.forEach((id) => targetExerciseIds.add(id));
+                        });
+
+                        const completedExercises = new Set(
+                            logsData
+                                .filter((log) => {
+                                    const startedAt = sessionDateById.get(
+                                        log.workout_session_id,
+                                    );
+                                    if (!startedAt) return false;
+                                    return (
+                                        new Date(startedAt) >= startDate &&
+                                        targetExerciseIds.has(log.exercise_id)
+                                    );
+                                })
+                                .map((log) => log.exercise_id),
+                        );
+
+                        specificExerciseCounts.set(
+                            goal.id,
+                            completedExercises.size,
+                        );
+                    });
+                }
+            }
 
             const progress = typedGoals.map((goal) => {
-                const startDate = new Date(now);
-                startDate.setDate(
-                    now.getDate() - (goal.timeframe === "weekly" ? 7 : 30),
-                );
-
-                const logsInTimeframe = logsData.filter((log) => {
-                    const startedAt = sessionDateById.get(
-                        log.workout_session_id,
-                    );
-                    if (!startedAt) return false;
-                    return new Date(startedAt) >= startDate;
-                });
-
-                if (goal.goal_type === "volume") {
-                    const matchingLogIds = logsInTimeframe
-                        .filter((log) => {
-                            const exercise = exerciseById.get(log.exercise_id);
-                            return (
-                                exercise?.target_body_part === goal.body_part
-                            );
-                        })
-                        .map((log) => log.id);
-
-                    const totalVolume = matchingLogIds.reduce((sum, logId) => {
-                        const sets = setsByLogId.get(logId) || [];
-                        return (
-                            sum +
-                            sets.reduce(
-                                (setSum, set) =>
-                                    setSum +
-                                    (set.weight || 0) * (set.reps || 0),
-                                0,
-                            )
-                        );
-                    }, 0);
-
-                    const targetValue = goal.target_value || 0;
+                if (goal.goal_type === "specific_exercises") {
+                    const completedCount =
+                        specificExerciseCounts.get(goal.id) || 0;
+                    const targetExercises = goal.target_exercises || [];
                     const progressValue =
-                        targetValue > 0 ? (totalVolume / targetValue) * 100 : 0;
+                        targetExercises.length > 0
+                            ? (completedCount / targetExercises.length) * 100
+                            : 0;
 
                     return {
                         goal,
-                        currentValue: totalVolume,
+                        currentValue: completedCount,
                         progress: Math.min(progressValue, 100),
-                        isAchieved: totalVolume >= targetValue,
+                        isAchieved: completedCount >= targetExercises.length,
                     };
                 }
 
-                if (goal.goal_type === "frequency") {
-                    const uniqueSessions = new Set(
-                        logsInTimeframe
-                            .filter((log) => {
-                                const exercise = exerciseById.get(
-                                    log.exercise_id,
-                                );
-                                return (
-                                    exercise?.target_body_part ===
-                                    goal.body_part
-                                );
-                            })
-                            .map((log) => log.workout_session_id),
-                    );
-
-                    const frequency = uniqueSessions.size;
-                    const targetValue = goal.target_value || 0;
-                    const progressValue =
-                        targetValue > 0 ? (frequency / targetValue) * 100 : 0;
-
-                    return {
-                        goal,
-                        currentValue: frequency,
-                        progress: Math.min(progressValue, 100),
-                        isAchieved: frequency >= targetValue,
-                    };
-                }
-
-                const targetExercises = goal.target_exercises || [];
-                if (targetExercises.length === 0) {
-                    return {
-                        goal,
-                        currentValue: 0,
-                        progress: 0,
-                        isAchieved: false,
-                    };
-                }
-
-                const targetExerciseIds = new Set<string>();
-                targetExercises.forEach((exerciseName) => {
-                    const ids = exerciseIdsByName.get(exerciseName) || [];
-                    ids.forEach((id) => targetExerciseIds.add(id));
-                });
-
-                const completedExercises = new Set(
-                    logsInTimeframe
-                        .filter((log) => targetExerciseIds.has(log.exercise_id))
-                        .map((log) => log.exercise_id),
+                const row = progressByGoalId.get(goal.id);
+                const currentValue = Number(row?.current_value || 0);
+                const progressValue = Number(row?.progress_percentage || 0);
+                const targetValue = Number(
+                    row?.target_value ?? goal.target_value ?? 0,
                 );
-
-                const completedCount = completedExercises.size;
-                const progressValue =
-                    targetExercises.length > 0
-                        ? (completedCount / targetExercises.length) * 100
-                        : 0;
 
                 return {
                     goal,
-                    currentValue: completedCount,
+                    currentValue,
                     progress: Math.min(progressValue, 100),
-                    isAchieved: completedCount >= targetExercises.length,
+                    isAchieved: targetValue > 0 && currentValue >= targetValue,
                 };
             });
 

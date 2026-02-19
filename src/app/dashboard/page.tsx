@@ -80,6 +80,7 @@ export default function DashboardPage() {
                 ]);
 
             if (templatesRes.error) throw templatesRes.error;
+
             setTemplates((templatesRes.data || []) as WorkoutTemplate[]);
 
             const allSessions = sessionsRes.data || [];
